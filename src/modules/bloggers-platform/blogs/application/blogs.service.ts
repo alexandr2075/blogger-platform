@@ -30,4 +30,4 @@ export class BlogsService {
     blog.makeDeleted();
     await this.blogsRepository.save(blog);
   }
-} 
+}

@@ -10,4 +10,4 @@ export class RemoveController {
   async removeAllData(): Promise<void> {
     await this.removeService.removeAllData();
   }
-} 
+}

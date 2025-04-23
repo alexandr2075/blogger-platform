@@ -1,18 +1,17 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    Post,
-    Put,
-    Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
 } from '@nestjs/common';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { PostsService } from '../application/posts.service';
-import { PostDocument } from '../domain/post.entity';
 import { PostsQueryRepository } from '../infrastructure/posts.query-repository';
 import { GetPostsQueryParams } from './get-posts-query-params.input-dto';
 import { CreatePostInputDto } from './input-dto/posts.input-dto';
@@ -27,19 +26,20 @@ export class PostsController {
   ) {}
 
   @Get()
-  async getAll(@Query() query: GetPostsQueryParams): Promise<PaginatedViewDto<PostViewDto[]>> {
+  async getAll(
+    @Query() query: GetPostsQueryParams,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
     return this.postsQueryRepository.getAll(query);
   }
 
   @Get(':id')
   async getById(@Param('id') id: string): Promise<PostViewDto> {
-    return this.postsQueryRepository.getByIdOrNotFoundFail(id);
+    return await this.postsQueryRepository.getByIdOrNotFoundFail(id);
   }
 
   @Post()
-  async createPost(@Body() body: CreatePostInputDto): Promise<PostDocument> {
+  async createPost(@Body() body: CreatePostInputDto): Promise<PostViewDto> {
     return await this.postsService.createPost(body);
-    
   }
 
   @Put(':id')
@@ -56,4 +56,4 @@ export class PostsController {
   async deletePost(@Param('id') id: string): Promise<void> {
     await this.postsService.deletePost(id);
   }
-} 
+}

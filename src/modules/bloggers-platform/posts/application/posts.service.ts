@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { BlogsQueryRepository } from '../../blogs/infrastructure/blogs.query-repository';
+import { PostViewDto } from '../../posts/api/view-dto/posts.view-dto';
 import { CreatePostInputDto } from '../api/input-dto/posts.input-dto';
 import { UpdatePostInputDto } from '../api/input-dto/update-post.input-dto';
-import { Post, PostDocument, PostModelType } from '../domain/post.entity';
+import { Post, PostModelType } from '../domain/post.entity';
 import { PostsRepository } from '../infrastructure/posts.repository';
-import { BlogsQueryRepository } from '../../blogs/infrastructure/blogs.query-repository';
 
 @Injectable()
 export class PostsService {
@@ -12,14 +13,16 @@ export class PostsService {
     @InjectModel(Post.name)
     private PostModel: PostModelType,
     private postsRepository: PostsRepository,
-    private blogsQueryRepository: BlogsQueryRepository
+    private blogsQueryRepository: BlogsQueryRepository,
   ) {}
 
-  async createPost(dto: CreatePostInputDto): Promise<PostDocument> {
-    const blog = await this.blogsQueryRepository.getByIdOrNotFoundFail(dto.blogId)
-    const post = Post.createInstance({...dto, blogName: blog.name});
+  async createPost(dto: CreatePostInputDto): Promise<PostViewDto> {
+    const blog = await this.blogsQueryRepository.getByIdOrNotFoundFail(
+      dto.blogId,
+    );
+    const post = this.PostModel.createInstance({ ...dto, blogName: blog.name });
     await this.postsRepository.save(post);
-    return post
+    return PostViewDto.mapToView(post);
   }
 
   async updatePost(id: string, dto: UpdatePostInputDto): Promise<void> {
@@ -33,4 +36,4 @@ export class PostsService {
     post.makeDeleted();
     await this.postsRepository.save(post);
   }
-} 
+}

@@ -18,4 +18,4 @@ export class BlogViewDto {
     dto.isMembership = blog.isMembership;
     return dto;
   }
-} 
+}

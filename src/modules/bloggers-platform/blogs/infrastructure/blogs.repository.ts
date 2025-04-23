@@ -36,4 +36,4 @@ export class BlogsRepository {
 
     return blog;
   }
-} 
+}

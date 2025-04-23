@@ -6,7 +6,7 @@ export enum PostsSortBy {
   Content = 'content',
   BlogId = 'blogId',
   BlogName = 'blogName',
-  CreatedAt = 'createdAt'
+  CreatedAt = 'createdAt',
 }
 
 export class GetPostsQueryParams extends BaseQueryParams {

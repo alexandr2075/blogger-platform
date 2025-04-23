@@ -18,7 +18,7 @@ export class User {
    */
   @Prop({ type: String, required: true })
   login: string;
- 
+
   /**
    * Password hash for authentication
    * @type {string}
@@ -26,7 +26,7 @@ export class User {
    */
   @Prop({ type: String, required: true })
   passwordHash: string;
- 
+
   /**
    * Email of the user
    * @type {string}
@@ -34,7 +34,7 @@ export class User {
    */
   @Prop({ type: String, required: true })
   email: string;
- 
+
   /**
    * Email confirmation status (if not confirmed in 2 days account will be deleted)
    * @type {boolean}
@@ -42,11 +42,11 @@ export class User {
    */
   @Prop({ type: Boolean, required: true, default: false })
   isEmailConfirmed: boolean;
- 
+
   // @Prop(NameSchema) this variant from doc. doesn't make validation for inner object
   @Prop({ type: NameSchema })
   name: Name;
- 
+
   /**
    * Creation timestamp
    * Explicitly defined despite timestamps: true
@@ -55,29 +55,29 @@ export class User {
    */
   createdAt: Date;
   updatedAt: Date;
- 
+
   /**
    * Deletion timestamp, nullable, if date exist, means entity soft deleted
    * @type {Date | null}
    */
   @Prop({ type: Date, nullable: true })
   deletedAt: Date | null;
- 
+
   static createInstance(dto: CreateUserDto): UserDocument {
     const user = new this();
     user.email = dto.email;
     user.passwordHash = dto.password;
     user.login = dto.login;
     user.isEmailConfirmed = false; // пользователь ВСЕГДА должен после регистрации подтверждить свой Email
- 
+    user.deletedAt = null;
     user.name = {
       firstName: 'firstName xxx',
       lastName: 'lastName yyy',
     };
- 
+
     return user as UserDocument;
   }
- 
+
   /**
    * Marks the user as deleted
    * Throws an error if already deleted
@@ -90,7 +90,7 @@ export class User {
     }
     this.deletedAt = new Date();
   }
- 
+
   /**
    * Updates the user instance with new data
    * Resets email confirmation if email is updated
@@ -106,15 +106,14 @@ export class User {
     }
   }
 }
- 
+
 export const UserSchema = SchemaFactory.createForClass(User);
- 
+
 //регистрирует методы сущности в схеме
 UserSchema.loadClass(User);
- 
+
 //Типизация документа
 export type UserDocument = HydratedDocument<User>;
- 
+
 //Типизация модели + статические методы
 export type UserModelType = Model<UserDocument> & typeof User;
- 

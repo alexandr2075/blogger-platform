@@ -29,6 +29,7 @@ export class Blog {
     blog.description = dto.description;
     blog.websiteUrl = dto.websiteUrl;
     blog.isMembership = false;
+    blog.deletedAt = null;
     return blog as BlogDocument;
   }
 
@@ -50,4 +51,4 @@ export const BlogSchema = SchemaFactory.createForClass(Blog);
 BlogSchema.loadClass(Blog);
 
 export type BlogDocument = HydratedDocument<Blog>;
-export type BlogModelType = Model<BlogDocument> & typeof Blog; 
+export type BlogModelType = Model<BlogDocument> & typeof Blog;

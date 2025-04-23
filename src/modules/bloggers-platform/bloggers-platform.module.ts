@@ -10,7 +10,6 @@ import { PostsRepository } from './posts/infrastructure/posts.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Blog, BlogSchema } from './blogs/domain/blog.entity';
 import { Post, PostSchema } from './posts/domain/post.entity';
-import type { ModuleRef } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -22,12 +21,12 @@ import type { ModuleRef } from '@nestjs/core';
   controllers: [BlogsController, PostsController],
   providers: [
     BlogsService,
-     BlogsRepository, 
-     BlogsQueryRepository,
-    PostsService, 
-    PostsRepository, 
-    PostsQueryRepository],
+    BlogsRepository,
+    BlogsQueryRepository,
+    PostsService,
+    PostsRepository,
+    PostsQueryRepository,
+  ],
   exports: [],
 })
-export class BloggersPlatformModule {} 
-
+export class BloggersPlatformModule {}

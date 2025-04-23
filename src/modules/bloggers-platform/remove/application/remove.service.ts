@@ -8,4 +8,4 @@ export class RemoveService {
   async removeAllData(): Promise<void> {
     await this.removeRepository.removeAllData();
   }
-} 
+}

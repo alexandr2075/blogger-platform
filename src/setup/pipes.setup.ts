@@ -6,4 +6,4 @@ export function pipesSetup(app: INestApplication) {
       transform: true,
     }),
   );
-} 
+}

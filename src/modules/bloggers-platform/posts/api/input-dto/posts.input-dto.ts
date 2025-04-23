@@ -3,7 +3,7 @@ export class CreatePostInputDto {
   shortDescription: string;
   content: string;
   blogId: string;
-} 
+}
 
 export class CreatePostInputDtoWithBlogName {
   title: string;
@@ -11,5 +11,4 @@ export class CreatePostInputDtoWithBlogName {
   content: string;
   blogId: string;
   blogName: string;
-} 
-
+}

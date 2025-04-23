@@ -4,4 +4,4 @@ export class CreatePostDto {
   content: string;
   blogId: string;
   blogName: string;
-} 
+}

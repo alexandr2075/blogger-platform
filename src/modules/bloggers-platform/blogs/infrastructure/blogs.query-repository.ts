@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetBlogsQueryParams } from '../api/get-blogs-query-params.input-dto';
@@ -22,9 +22,11 @@ export class BlogsQueryRepository {
     return BlogViewDto.mapToView(blog);
   }
 
-  async getAll(query: GetBlogsQueryParams): Promise<PaginatedViewDto<BlogViewDto[]>> {
+  async getAll(
+    query: GetBlogsQueryParams,
+  ): Promise<PaginatedViewDto<BlogViewDto[]>> {
     const filter: any = { deletedAt: null };
-    
+
     if (query.searchNameTerm) {
       filter.name = { $regex: query.searchNameTerm, $options: 'i' };
     }
@@ -35,15 +37,15 @@ export class BlogsQueryRepository {
         .skip(query.calculateSkip())
         .limit(query.pageSize)
         .exec(),
-      this.BlogModel.countDocuments(filter)
+      this.BlogModel.countDocuments(filter),
     ]);
 
     return {
-      items: items.map(blog => BlogViewDto.mapToView(blog)),
+      items: items.map((blog) => BlogViewDto.mapToView(blog)),
       totalCount,
       pagesCount: Math.ceil(totalCount / query.pageSize),
       page: query.pageNumber,
       pageSize: query.pageSize,
     };
   }
-} 
+}

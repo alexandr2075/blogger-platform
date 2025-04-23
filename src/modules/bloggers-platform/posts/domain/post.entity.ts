@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
-import { CreatePostInputDto, type CreatePostInputDtoWithBlogName } from '../api/input-dto/posts.input-dto';
+import { CreatePostInputDtoWithBlogName } from '../api/input-dto/posts.input-dto';
 import { UpdatePostInputDto } from '../api/input-dto/update-post.input-dto';
+import { ExtendedLikesInfo } from '../api/view-dto/extended-posts.view-dto';
 
 @Schema({ timestamps: true })
 export class Post {
@@ -25,6 +26,9 @@ export class Post {
 
   createdAt: Date;
   updatedAt: Date;
+
+  @Prop({ type: ExtendedLikesInfo, default: {} })
+  extendedLikesInfo: ExtendedLikesInfo;
 
   static createInstance(dto: CreatePostInputDtoWithBlogName): PostDocument {
     const post = new this();
@@ -55,4 +59,4 @@ export const PostSchema = SchemaFactory.createForClass(Post);
 PostSchema.loadClass(Post);
 
 export type PostDocument = HydratedDocument<Post>;
-export type PostModelType = Model<PostDocument> & typeof Post; 
+export type PostModelType = Model<PostDocument> & typeof Post;
