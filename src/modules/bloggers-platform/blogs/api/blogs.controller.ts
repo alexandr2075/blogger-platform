@@ -1,14 +1,14 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    Query,
 } from '@nestjs/common';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetPostsQueryParams } from '../../posts/api/get-posts-query-params.input-dto';
@@ -19,8 +19,8 @@ import { BlogsService } from '../application/blogs.service';
 import { BlogsQueryRepository } from '../infrastructure/blogs.query-repository';
 import { GetBlogsQueryParams } from './get-blogs-query-params.input-dto';
 import {
-  BlogPostInputDto,
-  CreateBlogInputDto,
+    BlogPostInputDto,
+    CreateBlogInputDto,
 } from './input-dto/blogs.input-dto';
 import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
 import { BlogViewDto } from './view-dto/blogs.view-dto';
@@ -58,7 +58,7 @@ export class BlogsController {
     @Query() query: GetPostsQueryParams,
     @Param('blogId') blogId: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    const blog = await this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
+    await this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
     query.blogId = blogId;
     return this.postsQueryRepository.getAll(query);
   }

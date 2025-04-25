@@ -5,7 +5,7 @@ import { Post, PostSchema } from '../posts/domain/post.entity';
 import { RemoveController } from './api/remove.controller';
 import { RemoveService } from './application/remove.service';
 import { RemoveRepository } from './infrastructure/remove.repository';
-import { User, UserSchema } from '../../user-accounts/domain/user.entity';
+import { User, UserSchema } from '../../users/domain/user.entity';
 
 @Module({
   imports: [
