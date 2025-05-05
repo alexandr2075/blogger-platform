@@ -1,4 +1,4 @@
-import { configModule } from './config-dynamic-module';
+import { configModule } from './configDynamicModule';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
