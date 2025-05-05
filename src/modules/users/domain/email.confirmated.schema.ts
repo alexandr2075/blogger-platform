@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import type { UUID } from 'crypto';
 
 export enum ConfirmedStatus {
     Confirmed = 'confirmed',
@@ -10,7 +11,7 @@ export enum ConfirmedStatus {
 })
 export class EmailConfirmation {
   @Prop()
-  confirmationCode: string;
+  confirmationCode?: string;
 
   @Prop()
   expirationDate: Date;

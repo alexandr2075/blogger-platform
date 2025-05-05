@@ -17,6 +17,7 @@ export class RemoveRepository {
   ) {}
 
   async removeAllData(): Promise<void> {
+    console.log('ALL DATA DELETED');
     await Promise.all([
       this.BlogModel.deleteMany({}),
       this.PostModel.deleteMany({}),

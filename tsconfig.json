@@ -12,7 +12,9 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@src/*": ["src/*"],
+      "@modules/*": ["src/modules/*"],
+      "@core/*": ["src/core/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

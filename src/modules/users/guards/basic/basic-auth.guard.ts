@@ -4,7 +4,6 @@ import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
-import { log } from 'console';
 
 @Injectable()
 export class BasicAuthGuard implements CanActivate {
@@ -16,8 +15,6 @@ export class BasicAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers.authorization;
-    console.log('header:', authHeader);
-    
 
     //https://docs.nestjs.com/security/authentication#enable-authentication-globally
     // reflection

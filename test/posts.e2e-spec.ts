@@ -80,7 +80,6 @@ describe('Posts API (e2e)', () => {
   describe('GET /posts/:id', () => {
     it('should return 404 for non-existent post', async () => {
       const response = await request(httpServer).get('/posts/nonexistentid');
-      console.log('response: ', response.text);
       expect(response.status).toBe(404);
     });
 

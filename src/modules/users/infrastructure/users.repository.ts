@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../domain/user.entity';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class UsersRepository {
@@ -39,7 +40,7 @@ export class UsersRepository {
   }
 
   async findByConfirmationCode(code: string): Promise<User | null> {
-    return this.UserModel.findOne({ confirmationCode: code });
+    return this.UserModel.findOne({ 'EmailConfirmed.confirmationCode': code });
   }
 
   async findByRecoveryCode(code: string): Promise<User | null> {
@@ -48,8 +49,8 @@ export class UsersRepository {
 
   async findNonDeletedOrNotFoundFail(id: string): Promise<UserDocument> {
     const user = await this.UserModel.findOne({
-      _id: id,
-      deletedAt: null
+      _id: new Types.ObjectId(id),
+      deletedAt: null,
     });
 
     if (!user) {
@@ -58,4 +59,4 @@ export class UsersRepository {
 
     return user;
   }
-} 
+}

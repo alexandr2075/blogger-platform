@@ -2,37 +2,26 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { setupApp } from '../src/setup/app.setup';
-import { Server } from 'http';
-import { BlogViewDto } from '@/modules/bloggers-platform/blogs/api/view-dto/blogs.view-dto';
 
 describe('Blogs API (e2e)', () => {
   let app: INestApplication;
-  let httpServer: Server;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    setupApp(app);
     await app.init();
-    httpServer = app.getHttpServer();
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await app.close();
-  });
-
-  // Clear database before each test
-  beforeEach(async () => {
-    await request(httpServer).delete('/testing/all-data');
   });
 
   describe('GET /blogs', () => {
     it('should return empty array when no blogs exist', async () => {
-      const response = await request(httpServer).get('/blogs');
+      const response = await request(app.getHttpServer()).get('/blogs');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
@@ -46,16 +35,18 @@ describe('Blogs API (e2e)', () => {
 
     it('should return blogs with pagination', async () => {
       // Create a blog first
-      const createResponse = await request(httpServer).post('/blogs').send({
-        name: 'Test Blog',
-        description: 'Test Description',
-        websiteUrl: 'https://test.com',
-      });
+      const createResponse = await request(app.getHttpServer())
+        .post('/blogs')
+        .send({
+          name: 'Test Blog',
+          description: 'Test Description',
+          websiteUrl: 'https://test.com',
+        });
 
       expect(createResponse.status).toBe(201);
 
       // Get all blogs
-      const response = await request(httpServer).get('/blogs');
+      const response = await request(app.getHttpServer()).get('/blogs');
 
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(1);
@@ -66,20 +57,20 @@ describe('Blogs API (e2e)', () => {
 
     it('should filter blogs by search term', async () => {
       // Create two blogs
-      await request(httpServer).post('/blogs').send({
+      await request(app.getHttpServer()).post('/blogs').send({
         name: 'First Blog',
         description: 'First Description',
         websiteUrl: 'https://first.com',
       });
 
-      await request(httpServer).post('/blogs').send({
+      await request(app.getHttpServer()).post('/blogs').send({
         name: 'Second Blog',
         description: 'Second Description',
         websiteUrl: 'https://second.com',
       });
 
       // Search for "First"
-      const response = await request(httpServer)
+      const response = await request(app.getHttpServer())
         .get('/blogs')
         .query({ searchNameTerm: 'First' });
 
@@ -91,22 +82,26 @@ describe('Blogs API (e2e)', () => {
 
   describe('GET /blogs/:id', () => {
     // it('should return 404 for non-existent blog', async () => {
-    //   const response = await request(httpServer).get('/blogs/nonexistentid');
+    //   const response = await request(app.getHttpServer()).get('/blogs/nonexistentid');
     //   expect(response.status).toBe(404);
     // });
 
     it('should return blog by id', async () => {
       // Create a blog first
-      const createResponse = await request(httpServer).post('/blogs').send({
-        name: 'Test Blog',
-        description: 'Test Description',
-        websiteUrl: 'https://test.com',
-      });
+      const createResponse = await request(app.getHttpServer())
+        .post('/blogs')
+        .send({
+          name: 'Test Blog',
+          description: 'Test Description',
+          websiteUrl: 'https://test.com',
+        });
 
       const blogId = createResponse.body.id;
 
       // Get blog by id
-      const response = await request(httpServer).get(`/blogs/${blogId}`);
+      const response = await request(app.getHttpServer()).get(
+        `/blogs/${blogId}`,
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.name).toBe('Test Blog');
@@ -117,7 +112,7 @@ describe('Blogs API (e2e)', () => {
 
   describe('POST /blogs', () => {
     it('should create a new blog', async () => {
-      const response = await request(httpServer).post('/blogs').send({
+      const response = await request(app.getHttpServer()).post('/blogs').send({
         name: 'New Blog',
         description: 'New Description',
         websiteUrl: 'https://new.com',
@@ -131,7 +126,7 @@ describe('Blogs API (e2e)', () => {
     });
 
     //   it('should return 400 for invalid input', async () => {
-    //     const response = await request(httpServer).post('/blogs').send({
+    //     const response = await request(app.getHttpServer()).post('/blogs').send({
     //       // Missing required fields
     //     });
     //
@@ -142,16 +137,18 @@ describe('Blogs API (e2e)', () => {
     describe('PUT /blogs/:id', () => {
       it('should update an existing blog', async () => {
         // Create a blog first
-        const createResponse = await request(httpServer).post('/blogs').send({
-          name: 'Test Blog',
-          description: 'Test Description',
-          websiteUrl: 'https://test.com',
-        });
+        const createResponse = await request(app.getHttpServer())
+          .post('/blogs')
+          .send({
+            name: 'Test Blog',
+            description: 'Test Description',
+            websiteUrl: 'https://test.com',
+          });
 
         const blogId = createResponse.body.id;
 
         // Update the blog
-        const updateResponse = await request(httpServer)
+        const updateResponse = await request(app.getHttpServer())
           .put(`/blogs/${blogId}`)
           .send({
             name: 'Updated Blog',
@@ -162,7 +159,9 @@ describe('Blogs API (e2e)', () => {
         expect(updateResponse.status).toBe(204);
 
         // Verify the update
-        const getResponse = await request(httpServer).get(`/blogs/${blogId}`);
+        const getResponse = await request(app.getHttpServer()).get(
+          `/blogs/${blogId}`,
+        );
 
         expect(getResponse.status).toBe(200);
         expect(getResponse.body.name).toBe('Updated Blog');
@@ -171,7 +170,7 @@ describe('Blogs API (e2e)', () => {
       });
 
       // it('should return 404 for non-existent blog', async () => {
-      //   const response = await request(httpServer)
+      //   const response = await request(app.getHttpServer())
       //     .put('/blogs/nonexistentid')
       //     .send({
       //       name: 'Updated Blog',
@@ -186,28 +185,31 @@ describe('Blogs API (e2e)', () => {
     describe('DELETE /blogs/:id', () => {
       it('should delete an existing blog', async () => {
         // Create a blog first
-        const createResponse = await request(httpServer).post('/blogs').send({
-          name: 'Test Blog',
-          description: 'Test Description',
-          websiteUrl: 'https://test.com',
-        });
+        const createResponse = await request(app.getHttpServer())
+          .post('/blogs')
+          .send({
+            name: 'Test Blog',
+            description: 'Test Description',
+            websiteUrl: 'https://test.com',
+          });
 
         const blogId = createResponse.body.id;
 
         // Delete the blog
-        const deleteResponse = await request(httpServer).delete(
+        const deleteResponse = await request(app.getHttpServer()).delete(
           `/blogs/${blogId}`,
         );
-        console.log(deleteResponse);
         expect(deleteResponse.status).toBe(204);
 
         // Verify the deletion
-        const getResponse = await request(httpServer).get(`/blogs/${blogId}`);
+        const getResponse = await request(app.getHttpServer()).get(
+          `/blogs/${blogId}`,
+        );
         expect(getResponse.status).toBe(404);
       });
 
       // it('should return 404 for non-existent blog', async () => {
-      //   const response = await request(httpServer).delete('/blogs/nonexistentid');
+      //   const response = await request(app.getHttpServer()).delete('/blogs/nonexistentid');
       //   expect(response.status).toBe(404);
       // });
     });
@@ -215,17 +217,21 @@ describe('Blogs API (e2e)', () => {
 
   describe('POST /blogs/blogId/posts', () => {
     it('should create a new post with blogId', async () => {
-      const responseBlog = await request(httpServer).post('/blogs').send({
-        name: 'New Blog',
-        description: 'New Description',
-        websiteUrl: 'https://new.com',
-      });
-      const responsePost = await request(httpServer).post('/posts').send({
-        title: 'New Post',
-        shortDescription: 'New Short Description',
-        content: 'New Content',
-        blogId: responseBlog.body.id,
-      });
+      const responseBlog = await request(app.getHttpServer())
+        .post('/blogs')
+        .send({
+          name: 'New Blog',
+          description: 'New Description',
+          websiteUrl: 'https://new.com',
+        });
+      const responsePost = await request(app.getHttpServer())
+        .post('/posts')
+        .send({
+          title: 'New Post',
+          shortDescription: 'New Short Description',
+          content: 'New Content',
+          blogId: responseBlog.body.id,
+        });
 
       expect(responsePost.status).toBe(201);
       expect(responsePost.body.title).toBe('New Post');
@@ -236,19 +242,23 @@ describe('Blogs API (e2e)', () => {
     });
 
     it('should return array posts by blogId', async () => {
-      const responseBlog1 = await request(httpServer).post('/blogs').send({
-        name: 'New Blog1',
-        description: 'New Description1',
-        websiteUrl: 'https://new1.com',
-      });
+      const responseBlog1 = await request(app.getHttpServer())
+        .post('/blogs')
+        .send({
+          name: 'New Blog1',
+          description: 'New Description1',
+          websiteUrl: 'https://new1.com',
+        });
 
-      const responseBlog2 = await request(httpServer).post('/blogs').send({
-        name: 'New Blog2',
-        description: 'New Description2',
-        websiteUrl: 'https://new2.com',
-      });
+      const responseBlog2 = await request(app.getHttpServer())
+        .post('/blogs')
+        .send({
+          name: 'New Blog2',
+          description: 'New Description2',
+          websiteUrl: 'https://new2.com',
+        });
 
-      const response = await request(httpServer).get('/blogs');
+      const response = await request(app.getHttpServer()).get('/blogs');
       expect(response.status).toBe(200);
       expect(response.body.items[0].name).toEqual('New Blog2');
       expect(response.body.items[1].name).toEqual('New Blog1');

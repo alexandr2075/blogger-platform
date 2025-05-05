@@ -1,8 +1,5 @@
 import { PostDocument } from '../../domain/post.entity';
-import {
-  LikeDetails,
-  LikeStatus,
-} from '@/modules/bloggers-platform/posts/api/view-dto/extended-posts.view-dto';
+import { LikeDetails, LikeStatus } from '../view-dto/extended-posts.view-dto';
 
 export class PostViewDto {
   id: string;

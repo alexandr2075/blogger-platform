@@ -1,14 +1,14 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    Post,
-    Put,
-    Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
 } from '@nestjs/common';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetPostsQueryParams } from '../../posts/api/get-posts-query-params.input-dto';
@@ -19,8 +19,8 @@ import { BlogsService } from '../application/blogs.service';
 import { BlogsQueryRepository } from '../infrastructure/blogs.query-repository';
 import { GetBlogsQueryParams } from './get-blogs-query-params.input-dto';
 import {
-    BlogPostInputDto,
-    CreateBlogInputDto,
+  BlogPostInputDto,
+  CreateBlogInputDto,
 } from './input-dto/blogs.input-dto';
 import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
 import { BlogViewDto } from './view-dto/blogs.view-dto';
@@ -34,16 +34,16 @@ export class BlogsController {
     private postsQueryRepository: PostsQueryRepository,
   ) {}
 
+  @Get(':id')
+  async getById(@Param('id') id: string): Promise<BlogViewDto> {
+    return this.blogsQueryRepository.getByIdOrNotFoundFail(id);
+  }
+
   @Get()
   async getAll(
     @Query() query: GetBlogsQueryParams,
   ): Promise<PaginatedViewDto<BlogViewDto[]>> {
     return this.blogsQueryRepository.getAll(query);
-  }
-
-  @Get(':id')
-  async getById(@Param('id') id: string): Promise<BlogViewDto> {
-    return this.blogsQueryRepository.getByIdOrNotFoundFail(id);
   }
 
   @Post()

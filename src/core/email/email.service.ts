@@ -16,24 +16,25 @@ export class EmailService {
         pass: this.configService.get('SMTP_PASSWORD'),
       },
     });
+   
   }
 
   async sendRegistrationConfirmation(
     email: string,
     confirmationCode: string,
   ): Promise<void> {
-    const confirmationLink = `${this.configService.get(
-      'API_URL',
-    )}/auth/registration-confirmation?code=${confirmationCode}`;
+    // const confirmationLink = `${this.configService.get(
+    //   'API_URL',
+    // )}/auth/registration-confirmation?code=${confirmationCode}`;
 
     await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
+      from: this.configService.get('SMTP_USER') as string,
       to: email,
       subject: 'Подтверждение регистрации',
       html: `
         <h1>Спасибо за регистрацию</h1>
         <p>Для подтверждения email перейдите по ссылке:</p>
-        <a href="${confirmationLink}">${confirmationLink}</a>
+        <a href="https://it-incubator.io/confirm-email?code=${confirmationCode}">complete registration</a>
       `,
     });
   }

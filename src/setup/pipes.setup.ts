@@ -7,8 +7,8 @@ import {
   DomainException,
   Extension,
 } from '../core/exceptions/domain-exceptions';
-import { ObjectIdValidationTransformationPipe } from '../core/pipes/object-id-validation-transformation-pipe.service';
 import { DomainExceptionCode } from '../core/exceptions/domain-exception-codes';
+import { ObjectIdValidationTransformationPipe } from '../core/pipes/object-id-validation-transformation-pipe.service';
 
 //функция использует рекурсию для обхода объекта children при вложенных полях при валидации
 //поставьте логи и разберитесь как она работает

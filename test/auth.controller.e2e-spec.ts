@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
-import { AuthController } from '../api/auth.controller';
-import { AuthService } from '../application/auth.service';
+import { JwtAuthGuard } from '../src/core/guards/jwt-auth.guard';
+import { AuthService } from '../src/modules/auth/application/auth.service';
+import { AuthController } from '../src/modules/auth/api/auth.controller';
 
 describe('AuthController', () => {
   let authController: AuthController;
@@ -41,7 +41,10 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should return access token', async () => {
-      const loginDto = { loginOrEmail: 'test@test.com', password: 'password123' };
+      const loginDto = {
+        loginOrEmail: 'test@test.com',
+        password: 'password123',
+      };
       const result = await authController.login(loginDto);
       expect(result).toEqual({ accessToken: 'token123' });
       expect(authService.login).toHaveBeenCalledWith(loginDto);
@@ -94,4 +97,4 @@ describe('AuthController', () => {
       expect(authService.getMe).toHaveBeenCalledWith('test-id');
     });
   });
-}); 
+});

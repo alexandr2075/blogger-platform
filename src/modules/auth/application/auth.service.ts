@@ -1,8 +1,11 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-import { EmailService } from '../../../core/email/email.service';
 import { UsersService } from '../../users/application/users.service';
 import { LoginInputDto } from '../api/input-dto/login.input-dto';
 import { NewPasswordInputDto } from '../api/input-dto/new-password.input-dto';
@@ -13,6 +16,8 @@ import { RegistrationInputDto } from '../api/input-dto/registration.input-dto';
 import { MeViewDto } from '../api/view-dto/me.view-dto';
 import { TokensViewDto } from '../api/view-dto/tokens.view-dto';
 import { ConfirmedStatus } from '../../users/domain/email.confirmated.schema';
+import { businessService } from '../../../modules/notifications/email.service';
+import { EmailService } from '../../../core/email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +28,8 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginInputDto): Promise<TokensViewDto> {
-    const user = await this.usersService.validateUser(dto.loginOrEmail, dto.password);
+    const user = await this.usersService.validateUser(dto);
+
     if (!user) {
       throw new UnauthorizedException('Неверные учетные данные');
     }
@@ -36,20 +42,27 @@ export class AuthService {
 
   async register(dto: RegistrationInputDto): Promise<void> {
     const confirmationCode = uuidv4();
-    await this.usersService.createUser(dto);
+    await this.usersService.createUser(dto, confirmationCode);
 
     await this.emailService.sendRegistrationConfirmation(
       dto.email,
       confirmationCode,
     );
+    // await businessService.sendConfirmationCodeToEmail(
+    //   dto.email,
+    //   confirmationCode,
+    // );
   }
 
-  async confirmRegistration(dto: RegistrationConfirmationInputDto): Promise<void> {
+  async confirmRegistration(
+    dto: RegistrationConfirmationInputDto,
+  ): Promise<void> {
     const user = await this.usersService.findByConfirmationCode(dto.code);
-    if (!user) {
-      throw new BadRequestException('Неверный код подтверждения');
+    if (!user || user.EmailConfirmed.confirmationCode !== dto.code) {
+      throw new BadRequestException('code incorrect');
     }
-    // await this.usersService.confirmUser(user.id);
+
+    await this.usersService.confirmUser(user.id);
   }
 
   async passwordRecovery(dto: PasswordRecoveryInputDto): Promise<void> {
@@ -59,6 +72,7 @@ export class AuthService {
     const recoveryCode = uuidv4();
     await this.usersService.setRecoveryCode(user.id, recoveryCode);
     await this.emailService.sendPasswordRecovery(dto.email, recoveryCode);
+    // await businessService.sendConfirmationCodeToEmail(dto.email, recoveryCode);
   }
 
   async newPassword(dto: NewPasswordInputDto): Promise<void> {
@@ -75,13 +89,21 @@ export class AuthService {
     dto: RegistrationEmailResendingInputDto,
   ): Promise<void> {
     const user = await this.usersService.findByEmail(dto.email);
-    if (!user || user.EmailConfirmed.isConfirmed === ConfirmedStatus.Confirmed) {
-      throw new BadRequestException('Невозможно переотправить email');
+    console.log('AUTH SERVICE RESEND', user)
+    if (
+      !user ||
+      user.EmailConfirmed.isConfirmed === ConfirmedStatus.Confirmed
+    ) {
+      throw new BadRequestException('email невозможно переотправить');
     }
 
     const newConfirmationCode = uuidv4();
-    await this.usersService.updateConfirmationCode(user.id, newConfirmationCode);
+    await this.usersService.updateConfirmationCode(
+      user.id,
+      newConfirmationCode,
+    );
     await this.emailService.sendRegistrationConfirmation(
+      // await businessService.sendConfirmationCodeToEmail(
       dto.email,
       newConfirmationCode,
     );
@@ -95,4 +117,4 @@ export class AuthService {
       userId: user.id,
     };
   }
-} 
+}

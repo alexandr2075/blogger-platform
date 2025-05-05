@@ -17,19 +17,18 @@ import { UsersService } from '../application/users.service';
 import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
 import { Public } from '../guards/decorators/public.decorator';
 import { UsersQueryRepository } from '../infrastructure/users.query-repository';
-import { UsersRepository } from '../infrastructure/users.repository';
 import { GetUsersQueryParams } from './get-users-query-params.input-dto';
 import { UpdateUserInputDto } from './input-dto/update-user.input-dto';
 import { CreateUserInputDto } from './input-dto/users.input-dto';
 import { UserViewDto } from './view-dto/users.view-dto';
+import { ObjectIdValidationPipe } from '../../../core/pipes/object-id-validation-transformation-pipe.service';
 
-@Controller('users')
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
+@Controller('users')
 export class UsersController {
   constructor(
     private usersQueryRepository: UsersQueryRepository,
-    private usersRepository: UsersRepository,
     private usersService: UsersService,
   ) {}
 
@@ -43,7 +42,9 @@ export class UsersController {
 
   @ApiParam({ name: 'id' }) //для сваггера
   @Get(':id')
-  async getById(@Param('id') id: string): Promise<UserViewDto> {
+  async getById(
+    @Param('id', ObjectIdValidationPipe) id: string,
+  ): Promise<UserViewDto> {
     return this.usersQueryRepository.getByIdOrNotFoundFail(id);
   }
 

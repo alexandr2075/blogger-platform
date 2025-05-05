@@ -44,17 +44,22 @@ describe('Users API (e2e)', () => {
 
     it('should return users with pagination', async () => {
       // Create a user first
-      const createResponse = await request(httpServer).post('/users').send({
-        login: 'testuser',
-        password: 'password123',
-        email: 'test@example.com',
-      });
+      const createResponse = await request(httpServer)
+        .post('/users')
+        .set(
+          'Authorization',
+          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
+        )
+        .send({
+          login: 'testuser',
+          password: 'password123',
+          email: 'test@example.com',
+        });
 
       expect(createResponse.status).toBe(201);
 
       // Get all users
       const response = await request(httpServer).get('/users');
-      console.log('response: ', response.body);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(1);
       expect(response.body.items[0].login).toBe('testuser');
@@ -63,19 +68,55 @@ describe('Users API (e2e)', () => {
       expect(response.body.items[0].password).toBeUndefined();
     });
 
+    it('should return count users', async () => {
+      for (let i = 1; i <= 15; i++) {
+        const response = await request(httpServer)
+          .post('/users')
+          .set(
+            'Authorization',
+            'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
+          )
+          .send({
+            login: `testuser${i}`,
+            password: `password${i}`,
+            email: `testuser${i}@example.com`,
+          });
+
+        expect(response.status).toBe(201);
+        expect(response.body.login).toBe(`testuser${i}`);
+      }
+
+      // Get all users
+      const response = await request(httpServer).get('/users');
+      expect(response.status).toBe(200);
+      expect(response.body.totalCount).toBe(15);
+    });
+
     it('should filter users by search term', async () => {
       // Create two users
-      await request(httpServer).post('/users').send({
-        login: 'firstuser',
-        password: 'password123',
-        email: 'first@example.com',
-      });
+      await request(httpServer)
+        .post('/users')
+        .set(
+          'Authorization',
+          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
+        )
+        .send({
+          login: 'firstuser',
+          password: 'password123',
+          email: 'first@example.com',
+        });
 
-      await request(httpServer).post('/users').send({
-        login: 'seconduser',
-        password: 'password123',
-        email: 'second@example.com',
-      });
+      await request(httpServer)
+        .post('/users')
+        .set(
+          'Authorization',
+          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
+        )
+        .send({
+          login: 'seconduser',
+          password: 'password123',
+          email: 'second@example.com',
+        });
 
       // Search for "first"
       const response = await request(httpServer)
@@ -90,7 +131,12 @@ describe('Users API (e2e)', () => {
 
   describe('GET /users/:id', () => {
     it('should return 404 for non-existent user', async () => {
-      const response = await request(httpServer).get('/users/nonexistentid');
+      const response = await request(httpServer)
+        .get('/users/nonexistentid')
+        .set(
+          'Authorization',
+          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
+        );
       expect(response.status).toBe(404);
     });
 
@@ -117,11 +163,17 @@ describe('Users API (e2e)', () => {
 
   describe('POST /users', () => {
     it('should create a new user', async () => {
-      const response = await request(httpServer).post('/users').send({
-        login: 'newuser',
-        password: 'password123',
-        email: 'new@example.com',
-      });
+      const response = await request(httpServer)
+        .post('/users')
+        .set(
+          'Authorization',
+          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
+        )
+        .send({
+          login: 'newuser',
+          password: 'password123',
+          email: 'new@example.com',
+        });
 
       expect(response.status).toBe(201);
       expect(response.body.login).toBe('newuser');

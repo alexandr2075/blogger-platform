@@ -1,10 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import type { UpdateUserInputDto } from '../api/input-dto/update-user.input-dto';
-import { UpdateUserDto } from '../dto/create-user.dto';
 import { CreateUserDomainDto } from './dto/create-user.domain.dto';
-import { ConfirmedStatus, EmailConfirmation, EmailConfirmationSchema } from './email.confirmated.schema';
+import {
+  ConfirmedStatus,
+  EmailConfirmation,
+  EmailConfirmationSchema,
+} from './email.confirmated.schema';
 import { Name, NameSchema } from './name.schema';
+import type { UUID } from 'crypto';
 
 export const loginConstraints = {
   minLength: 3,
@@ -105,10 +109,11 @@ export class User {
     user.email = dto.email;
     user.passwordHash = dto.passwordHash;
     user.login = dto.login;
+    user.deletedAt = null;
     user.EmailConfirmed = {
-      confirmationCode: '',
+      confirmationCode: dto.confirmationCode,
       expirationDate: new Date(),
-      isConfirmed: ConfirmedStatus.Unconfirmed
+      isConfirmed: ConfirmedStatus.Unconfirmed,
     };
 
     user.name = {
@@ -133,8 +138,8 @@ export class User {
   }
 
   setConfirmationCode(code: string) {
-    this.EmailConfirmed.confirmationCode = code
-    this.EmailConfirmed.isConfirmed = ConfirmedStatus.Confirmed;
+    this.EmailConfirmed.confirmationCode = code;
+    // this.EmailConfirmed.isConfirmed = ConfirmedStatus.Confirmed;
   }
 
   /**
@@ -148,6 +153,11 @@ export class User {
       this.EmailConfirmed.isConfirmed = ConfirmedStatus.Unconfirmed;
       this.email = dto.email;
     }
+  }
+
+  confirm(id: string) {
+    this.EmailConfirmed.isConfirmed = ConfirmedStatus.Confirmed;
+    this.EmailConfirmed.confirmationCode = undefined;
   }
 
   updatePassword(newPasswordHash: string) {

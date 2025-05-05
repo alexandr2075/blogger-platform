@@ -1,11 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
-import type { UpdateUserInputDto } from '../api/input-dto/update-user.input-dto';
+import { UpdateUserInputDto } from '../api/input-dto/update-user.input-dto';
 import { User, UserModelType } from '../domain/user.entity';
 import { UsersRepository } from '../infrastructure/users.repository';
-
+import type { UUID } from 'crypto';
+import type { LoginInputDto } from '../../auth/api/input-dto/login.input-dto';
 
 @Injectable()
 export class UsersService {
@@ -15,24 +20,44 @@ export class UsersService {
     private usersRepository: UsersRepository,
   ) {}
 
-  async validateUser(loginOrEmail: string, password: string): Promise<User | null> {
-    const user = await this.usersRepository.findByLoginOrEmail(loginOrEmail);
+  async validateUser(dto: LoginInputDto): Promise<User | null> {
+    const user = await this.usersRepository.findByLoginOrEmail(
+      dto.loginOrEmail,
+    );
+
     if (!user) return null;
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+    console.log('isPasswordValid:', isPasswordValid);
     if (!isPasswordValid) return null;
 
     return user;
   }
 
-  async createUser(dto: CreateUserDto): Promise<string> {
+  async createUser(
+    dto: CreateUserDto,
+    confirmationCode?: string,
+  ): Promise<string> {
+    const userLogin = await this.usersRepository.findByLoginOrEmail(dto.login);
+    const userEmail = await this.usersRepository.findByLoginOrEmail(dto.email);
+
+    if (userLogin) {
+      throw new BadRequestException('login already exists');
+    }
+
+    if (userEmail) {
+      throw new BadRequestException('email already exists');
+    }
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = this.UserModel.createInstance({
       login: dto.login,
       passwordHash,
       email: dto.email,
+      confirmationCode,
     });
-
     await this.usersRepository.save(user);
     return user.id;
   }
@@ -47,9 +72,18 @@ export class UsersService {
     return user._id.toString();
   }
 
+  async confirmUser(id: string): Promise<string> {
+    const user = await this.usersRepository.findOrNotFoundFail(id);
+
+    user.confirm(user._id.toString());
+
+    // await this.usersRepository.save(user);
+
+    return user._id.toString();
+  }
+
   async deleteUser(id: string) {
     const user = await this.usersRepository.findNonDeletedOrNotFoundFail(id);
-
     user.makeDeleted();
 
     await this.usersRepository.save(user);
@@ -95,7 +129,8 @@ export class UsersService {
 
   async updateConfirmationCode(userId: string, newCode: string): Promise<void> {
     const user = await this.findById(userId);
+    console.log(user, ' user')
     user.setConfirmationCode(newCode);
     await this.usersRepository.save(user);
   }
-} 
+}

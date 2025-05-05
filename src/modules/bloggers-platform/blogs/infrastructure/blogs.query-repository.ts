@@ -1,4 +1,4 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetBlogsQueryParams } from '../api/get-blogs-query-params.input-dto';
@@ -7,10 +7,10 @@ import { Blog, BlogModelType } from '../domain/blog.entity';
 
 @Injectable()
 export class BlogsQueryRepository {
-  constructor(@InjectModel(Blog.name) private BlogModel: BlogModelType) {}
+  constructor(@InjectModel(Blog.name) private blogModel: BlogModelType) {}
 
   async getByIdOrNotFoundFail(id: string): Promise<BlogViewDto> {
-    const blog = await this.BlogModel.findOne({
+    const blog = await this.blogModel.findOne({
       _id: id,
       deletedAt: null,
     });
@@ -31,13 +31,18 @@ export class BlogsQueryRepository {
       filter.name = { $regex: query.searchNameTerm, $options: 'i' };
     }
 
+    // if (!query.sortBy) query.sortBy = BlogsSortBy.CreatedAt;
+    // if (!query.sortDirection) query.sortDirection = SortDirection.Asc;
+    // if (!query.pageSize) query.pageSize = 10;
+
     const [items, totalCount] = await Promise.all([
-      this.BlogModel.find(filter)
-        .sort({ [query.sortBy]: query.sortDirection === 'asc' ? 1 : -1 })
+      this.blogModel
+        .find(filter)
+        .sort({ [query.sortBy]: query.sortDirection })
         .skip(query.calculateSkip())
         .limit(query.pageSize)
         .exec(),
-      this.BlogModel.countDocuments(filter),
+      this.blogModel.countDocuments(filter),
     ]);
 
     return {

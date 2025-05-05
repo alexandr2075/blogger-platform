@@ -1,11 +1,11 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Post,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
@@ -31,9 +31,7 @@ export class AuthController {
 
   @Post('password-recovery')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async passwordRecovery(
-    @Body() dto: PasswordRecoveryInputDto,
-  ): Promise<void> {
+  async passwordRecovery(@Body() dto: PasswordRecoveryInputDto): Promise<void> {
     await this.authService.passwordRecovery(dto);
   }
 
@@ -62,6 +60,7 @@ export class AuthController {
   async registrationEmailResending(
     @Body() dto: RegistrationEmailResendingInputDto,
   ): Promise<void> {
+    console.log('resending')
     await this.authService.resendRegistrationEmail(dto);
   }
 
@@ -70,4 +69,4 @@ export class AuthController {
   async getMe(@CurrentUser() userId: string): Promise<MeViewDto> {
     return this.authService.getMe(userId);
   }
-} 
+}
