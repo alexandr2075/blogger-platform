@@ -5,15 +5,19 @@ import { GetPostsQueryParams } from '../api/get-posts-query-params.input-dto';
 import { PostViewDto } from '../api/view-dto/posts.view-dto';
 import { Post, PostModelType } from '../domain/post.entity';
 import { Types } from 'mongoose';
+import { UserModelType } from '../../../users/domain/user.entity';
+import { UsersQueryRepository } from '../../../../modules/users/infrastructure/users.query-repository';
 
 @Injectable()
 export class PostsQueryRepository {
   constructor(
     @InjectModel(Post.name)
     private PostModel: PostModelType,
+    private usersQueryRepository: UsersQueryRepository,
   ) {}
 
-  async getByIdOrNotFoundFail(id: string): Promise<PostViewDto> {
+  async getByIdOrNotFoundFail(id: string, userId?: string): Promise<PostViewDto> {
+    
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException('invalid post id');
     }
@@ -27,12 +31,18 @@ export class PostsQueryRepository {
       throw new NotFoundException('post not found');
     }
 
-    return PostViewDto.mapToView(post);
+    return PostViewDto.mapToView(post, userId);
   }
 
   async getAll(
     query: GetPostsQueryParams,
+    userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
+   
+   const user = userId 
+   ? await this.usersQueryRepository.getByIdOrNotFoundFail(userId)
+   : null;
+    
     const filter: any = { deletedAt: null };
 
     if (query.blogId) {
@@ -49,7 +59,7 @@ export class PostsQueryRepository {
     ]);
 
     return PaginatedViewDto.mapToView({
-      items: items.map((post) => PostViewDto.mapToView(post)),
+      items: items.map((post) => PostViewDto.mapToView(post, userId, user?.login)),
       page: query.pageNumber,
       size: query.pageSize,
       totalCount,

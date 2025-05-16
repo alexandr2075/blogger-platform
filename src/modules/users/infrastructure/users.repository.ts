@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument, UserModelType } from '../domain/user.entity';
 import { Types } from 'mongoose';
+import { User, UserDocument, UserModelType } from '../domain/user.entity';
 
 @Injectable()
 export class UsersRepository {
@@ -10,8 +10,8 @@ export class UsersRepository {
     private UserModel: UserModelType,
   ) {}
 
-  async save(user: User): Promise<void> {
-    await this.UserModel.findByIdAndUpdate(user.id, user, { upsert: true });
+  async save(user: UserDocument): Promise<void> {
+    await user.save();
   }
 
   async findOrNotFoundFail(id: string): Promise<UserDocument> {
@@ -28,6 +28,7 @@ export class UsersRepository {
   async findByLoginOrEmail(loginOrEmail: string): Promise<User | null> {
     return this.UserModel.findOne({
       $or: [{ login: loginOrEmail }, { email: loginOrEmail }],
+      deletedAt: null,
     });
   }
 
@@ -48,6 +49,11 @@ export class UsersRepository {
   }
 
   async findNonDeletedOrNotFoundFail(id: string): Promise<UserDocument> {
+    
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('blog not found');
+    }
+    
     const user = await this.UserModel.findOne({
       _id: new Types.ObjectId(id),
       deletedAt: null,

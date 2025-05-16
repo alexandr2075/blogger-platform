@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './api/auth.controller';
 import { AuthService } from './application/auth.service';
-import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { NotificationsModule } from '../../modules/notifications/notifications.module';
 import { EmailModule } from '../../core/email/email.module';
 
 
@@ -20,7 +20,7 @@ import { EmailModule } from '../../core/email/email.module';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION_TIME', '60s'),
+          expiresIn: configService.get<string>('JWT_EXPIRATION_TIME', '30m'),
         },
       }),
       inject: [ConfigService],

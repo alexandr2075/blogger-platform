@@ -10,13 +10,20 @@ export class PostViewDto {
   blogName: string;
   createdAt: Date;
   extendedLikesInfo: {
-    likesCount: number;
-    dislikesCount: number;
+    likesCount: number | null;
+    dislikesCount: number | null;
     myStatus: LikeStatus;
     newestLikes: LikeDetails[];
   };
 
-  static mapToView(post: PostDocument): PostViewDto {
+  static mapToView(post: PostDocument, userId?: string, login?: string): PostViewDto {
+    let myStatus = LikeStatus.None;
+    
+    if (userId) {
+      if (post.likesCountArray.includes(userId)) myStatus = LikeStatus.Like;
+      else if (post.dislikesCountArray.includes(userId)) myStatus = LikeStatus.Dislike;
+    }
+
     return {
       id: post._id.toString(),
       title: post.title,
@@ -26,14 +33,10 @@ export class PostViewDto {
       blogName: post.blogName,
       createdAt: post.createdAt,
       extendedLikesInfo: {
-        likesCount: post.extendedLikesInfo.likesCount,
-        dislikesCount: post.extendedLikesInfo.dislikesCount,
-        myStatus: post.extendedLikesInfo.myStatus,
-        newestLikes: post.extendedLikesInfo.newestLikes.map((like) => ({
-          addedAt: like.addedAt,
-          userId: like.userId,
-          login: like.login,
-        })),
+        likesCount: post.likesCountArray.length,
+        dislikesCount: post.dislikesCountArray.length,
+        myStatus,
+        newestLikes: post.extendedLikesInfo.newestLikes.slice(-3).reverse(),
       },
     };
   }

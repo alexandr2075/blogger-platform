@@ -25,12 +25,14 @@ describe('Users API (e2e)', () => {
 
   // Clear database before each test
   beforeEach(async () => {
-    await request(httpServer).delete('/testing/all-data');
+    await request(httpServer)
+    .delete('/testing/all-data')
   });
 
   describe('GET /users', () => {
     it('should return empty array when no users exist', async () => {
-      const response = await request(httpServer).get('/users');
+      const response = await request(httpServer).get('/users')
+      .auth('admin', 'qwerty');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
@@ -46,10 +48,7 @@ describe('Users API (e2e)', () => {
       // Create a user first
       const createResponse = await request(httpServer)
         .post('/users')
-        .set(
-          'Authorization',
-          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
-        )
+        .auth('admin', 'qwerty')
         .send({
           login: 'testuser',
           password: 'password123',
@@ -59,7 +58,7 @@ describe('Users API (e2e)', () => {
       expect(createResponse.status).toBe(201);
 
       // Get all users
-      const response = await request(httpServer).get('/users');
+      const response = await request(httpServer).get('/users').auth('admin', 'qwerty');
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(1);
       expect(response.body.items[0].login).toBe('testuser');
@@ -72,10 +71,7 @@ describe('Users API (e2e)', () => {
       for (let i = 1; i <= 15; i++) {
         const response = await request(httpServer)
           .post('/users')
-          .set(
-            'Authorization',
-            'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
-          )
+          .auth('admin', 'qwerty')
           .send({
             login: `testuser${i}`,
             password: `password${i}`,
@@ -87,7 +83,7 @@ describe('Users API (e2e)', () => {
       }
 
       // Get all users
-      const response = await request(httpServer).get('/users');
+      const response = await request(httpServer).get('/users').auth('admin', 'qwerty');
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(15);
     });
@@ -96,10 +92,7 @@ describe('Users API (e2e)', () => {
       // Create two users
       await request(httpServer)
         .post('/users')
-        .set(
-          'Authorization',
-          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
-        )
+        .auth('admin', 'qwerty')
         .send({
           login: 'firstuser',
           password: 'password123',
@@ -108,10 +101,7 @@ describe('Users API (e2e)', () => {
 
       await request(httpServer)
         .post('/users')
-        .set(
-          'Authorization',
-          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
-        )
+        .auth('admin', 'qwerty')
         .send({
           login: 'seconduser',
           password: 'password123',
@@ -121,6 +111,7 @@ describe('Users API (e2e)', () => {
       // Search for "first"
       const response = await request(httpServer)
         .get('/users')
+        .auth('admin', 'qwerty')
         .query({ searchLoginTerm: 'first' });
 
       expect(response.status).toBe(200);
@@ -133,16 +124,15 @@ describe('Users API (e2e)', () => {
     it('should return 404 for non-existent user', async () => {
       const response = await request(httpServer)
         .get('/users/nonexistentid')
-        .set(
-          'Authorization',
-          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
-        );
+        .auth('admin', 'qwerty');
       expect(response.status).toBe(404);
     });
 
     it('should return user by id', async () => {
       // Create a user first
-      const createResponse = await request(httpServer).post('/users').send({
+      const createResponse = await request(httpServer).post('/users')
+      .auth('admin', 'qwerty')
+      .send({
         login: 'testuser',
         password: 'password123',
         email: 'test@example.com',
@@ -151,7 +141,7 @@ describe('Users API (e2e)', () => {
       const userId = createResponse.body.id;
 
       // Get user by id
-      const response = await request(httpServer).get(`/users/${userId}`);
+      const response = await request(httpServer).get(`/users/${userId}`).auth('admin', 'qwerty');
 
       expect(response.status).toBe(200);
       expect(response.body.login).toBe('testuser');
@@ -165,10 +155,7 @@ describe('Users API (e2e)', () => {
     it('should create a new user', async () => {
       const response = await request(httpServer)
         .post('/users')
-        .set(
-          'Authorization',
-          'Basic ' + Buffer.from('admin:qwerty').toString('base64'),
-        )
+        .auth('admin', 'qwerty')
         .send({
           login: 'newuser',
           password: 'password123',
@@ -184,7 +171,8 @@ describe('Users API (e2e)', () => {
     });
 
     it('should return 400 for invalid input', async () => {
-      const response = await request(httpServer).post('/users').send({
+      const response = await request(httpServer).post('/users')
+      .auth('admin', 'qwerty').send({
         // Missing required fields
       });
 
@@ -193,14 +181,17 @@ describe('Users API (e2e)', () => {
 
     it('should return 400 for duplicate login', async () => {
       // Create first user
-      await request(httpServer).post('/users').send({
+      await request(httpServer).post('/users')
+      .auth('admin', 'qwerty').send({
         login: 'duplicateuser',
         password: 'password123',
         email: 'first@example.com',
       });
 
       // Try to create user with same login
-      const response = await request(httpServer).post('/users').send({
+      const response = await request(httpServer).post('/users')
+      .auth('admin', 'qwerty')
+      .send({
         login: 'duplicateuser',
         password: 'password123',
         email: 'second@example.com',
@@ -211,14 +202,18 @@ describe('Users API (e2e)', () => {
 
     it('should return 400 for duplicate email', async () => {
       // Create first user
-      await request(httpServer).post('/users').send({
+      await request(httpServer).post('/users')
+      .auth('admin', 'qwerty')
+      .send({
         login: 'firstuser',
         password: 'password123',
         email: 'duplicate@example.com',
       });
 
       // Try to create user with same email
-      const response = await request(httpServer).post('/users').send({
+      const response = await request(httpServer).post('/users')
+      .auth('admin', 'qwerty')
+      .send({
         login: 'seconduser',
         password: 'password123',
         email: 'duplicate@example.com',
@@ -231,7 +226,9 @@ describe('Users API (e2e)', () => {
   describe('DELETE /users/:id', () => {
     it('should delete an existing user', async () => {
       // Create a user first
-      const createResponse = await request(httpServer).post('/users').send({
+      const createResponse = await request(httpServer).post('/users')
+      .auth('admin', 'qwerty')
+      .send({
         login: 'testuser',
         password: 'password123',
         email: 'test@example.com',
@@ -240,18 +237,22 @@ describe('Users API (e2e)', () => {
       const userId = createResponse.body.id;
 
       // Delete the user
-      const deleteResponse = await request(httpServer).delete(
+      const deleteResponse = await request(httpServer)
+      .delete(
         `/users/${userId}`,
-      );
+      )
+      .auth('admin', 'qwerty');
       expect(deleteResponse.status).toBe(204);
 
       // Verify the deletion
-      const getResponse = await request(httpServer).get(`/users/${userId}`);
+      const getResponse = await request(httpServer).get(`/users/${userId}`).auth('admin', 'qwerty');
       expect(getResponse.status).toBe(404);
     });
 
     it('should return 404 for non-existent user', async () => {
-      const response = await request(httpServer).delete('/users/nonexistentid');
+      const response = await request(httpServer)
+      .delete('/users/nonexistentid')
+      .auth('admin', 'qwerty');
       expect(response.status).toBe(404);
     });
   });

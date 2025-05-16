@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import bcrypt from 'bcrypt';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserInputDto } from '../api/input-dto/update-user.input-dto';
-import { User, UserModelType } from '../domain/user.entity';
+import { User, UserDocument, UserModelType } from '../domain/user.entity';
 import { UsersRepository } from '../infrastructure/users.repository';
 import type { UUID } from 'crypto';
 import type { LoginInputDto } from '../../auth/api/input-dto/login.input-dto';
@@ -31,7 +31,7 @@ export class UsersService {
       dto.password,
       user.passwordHash,
     );
-    console.log('isPasswordValid:', isPasswordValid);
+    // console.log('isPasswordValid:', isPasswordValid);
     if (!isPasswordValid) return null;
 
     return user;
@@ -40,7 +40,7 @@ export class UsersService {
   async createUser(
     dto: CreateUserDto,
     confirmationCode?: string,
-  ): Promise<string> {
+  ) {
     const userLogin = await this.usersRepository.findByLoginOrEmail(dto.login);
     const userEmail = await this.usersRepository.findByLoginOrEmail(dto.email);
 
@@ -58,8 +58,15 @@ export class UsersService {
       email: dto.email,
       confirmationCode,
     });
-    await this.usersRepository.save(user);
-    return user.id;
+    try {
+      await this.usersRepository.save(user);
+    } catch (e) {
+      if (e.code === 11000) {
+        throw new BadRequestException('Пользователь с таким логином или email уже существует');
+      }
+      throw e;
+    }
+    return user;
   }
 
   async updateUser(id: string, dto: UpdateUserInputDto): Promise<string> {
@@ -75,9 +82,9 @@ export class UsersService {
   async confirmUser(id: string): Promise<string> {
     const user = await this.usersRepository.findOrNotFoundFail(id);
 
-    user.confirm(user._id.toString());
-
-    // await this.usersRepository.save(user);
+    user.confirm();
+    console.log('confirmUser:', user);
+    await this.usersRepository.save(user);
 
     return user._id.toString();
   }
@@ -97,7 +104,7 @@ export class UsersService {
     return this.usersRepository.findByEmail(email);
   }
 
-  async findById(id: string): Promise<User> {
+  async findById(id: string): Promise<UserDocument> {
     const user = await this.usersRepository.findById(id);
     if (!user) {
       throw new NotFoundException('Пользователь не найден');
@@ -129,7 +136,7 @@ export class UsersService {
 
   async updateConfirmationCode(userId: string, newCode: string): Promise<void> {
     const user = await this.findById(userId);
-    console.log(user, ' user')
+    // console.log(user, ' user')
     user.setConfirmationCode(newCode);
     await this.usersRepository.save(user);
   }

@@ -9,7 +9,7 @@ import { DomainExceptionCode } from '../exceptions/domain-exception-codes';
 export class ObjectIdValidationTransformationPipe implements PipeTransform {
   transform(value: string, metadata: ArgumentMetadata): any {
     // Проверяем, что тип данных в декораторе — ObjectId
-    if (metadata.metatype !== Types.ObjectId) {
+    if (!value || metadata.metatype !== Types.ObjectId) {
       return value;
     }
 
@@ -35,7 +35,7 @@ export class ObjectIdValidationPipe implements PipeTransform {
 
     if (!isValidObjectId(value)) {
       throw new DomainException({
-        code: DomainExceptionCode.BadRequest,
+        code: DomainExceptionCode.NotFound,
         message: `Invalid ObjectId: ${value}`,
       });
     }

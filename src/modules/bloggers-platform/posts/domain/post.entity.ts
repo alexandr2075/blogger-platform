@@ -2,9 +2,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import { CreatePostInputDtoWithBlogName } from '../api/input-dto/posts.input-dto';
 import { UpdatePostInputDto } from '../api/input-dto/update-post.input-dto';
-import { ExtendedLikesInfo } from '../api/view-dto/extended-posts.view-dto';
+import { ExtendedLikesInfo, LikeDetails, LikeStatus } from '../api/view-dto/extended-posts.view-dto';
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, optimisticConcurrency: true, versionKey: '__v' })
 export class Post {
   @Prop({ type: String, required: true })
   title: string;
@@ -30,6 +30,12 @@ export class Post {
   @Prop({ type: ExtendedLikesInfo, default: {} })
   extendedLikesInfo: ExtendedLikesInfo;
 
+  @Prop({ type: [String], default: [] })
+  likesCountArray: string[];
+
+  @Prop({ type: [String], default: [] })
+  dislikesCountArray: string[];
+
   static createInstance(dto: CreatePostInputDtoWithBlogName): PostDocument {
     const post = new this();
     post.title = dto.title;
@@ -38,6 +44,14 @@ export class Post {
     post.blogId = dto.blogId;
     post.blogName = dto.blogName;
     post.deletedAt = null;
+    post.likesCountArray = [];
+    post.dislikesCountArray = [];
+    extendedLikesInfo: {
+      likesCount: post.likesCountArray ? post.likesCountArray.length : null;
+      dislikesCount: post.dislikesCountArray? post.dislikesCountArray.length : null;
+      myStatus: LikeStatus.None;
+      newestLikes:[];
+    };
     return post as PostDocument;
   }
 

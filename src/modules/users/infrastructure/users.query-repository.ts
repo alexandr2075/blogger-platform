@@ -18,7 +18,7 @@ export class UsersQueryRepository {
       _id: new Types.ObjectId(id),
       deletedAt: null,
     });
-    
+
     if (!user) {
       throw new NotFoundException('user not found');
     }

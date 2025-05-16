@@ -2,7 +2,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { UUID } from 'node:crypto';
 import nodemailer from 'nodemailer';
-import { SETTINGS } from '@src/settings';
+import { SETTINGS } from '../../settings';
 
 // @Injectable()
 // export class EmailService {

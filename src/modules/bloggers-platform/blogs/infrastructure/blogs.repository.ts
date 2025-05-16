@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Blog, BlogDocument, BlogModelType } from '../domain/blog.entity';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class BlogsRepository {
@@ -18,6 +19,9 @@ export class BlogsRepository {
   }
 
   async findOrNotFoundFail(id: string): Promise<BlogDocument> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('invalid post id');
+    }
     const blog = await this.findById(id);
 
     if (!blog) {
@@ -28,6 +32,10 @@ export class BlogsRepository {
   }
 
   async findNonDeletedOrNotFoundFail(id: string): Promise<BlogDocument> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('invalid post id');
+    }
+    
     const blog = await this.findById(id);
 
     if (!blog) {

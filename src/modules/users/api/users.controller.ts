@@ -11,6 +11,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { ApiBasicAuth, ApiParam } from '@nestjs/swagger';
 import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
 import { UsersService } from '../application/users.service';
@@ -22,6 +23,7 @@ import { UpdateUserInputDto } from './input-dto/update-user.input-dto';
 import { CreateUserInputDto } from './input-dto/users.input-dto';
 import { UserViewDto } from './view-dto/users.view-dto';
 import { ObjectIdValidationPipe } from '../../../core/pipes/object-id-validation-transformation-pipe.service';
+import { CreateUserCommand } from '../application/use-cases/create-user-use-case';
 
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
@@ -30,6 +32,7 @@ export class UsersController {
   constructor(
     private usersQueryRepository: UsersQueryRepository,
     private usersService: UsersService,
+    private commandBus: CommandBus
   ) {}
 
   @Public()
@@ -50,8 +53,8 @@ export class UsersController {
 
   @Post()
   async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
-    const userId = await this.usersService.createUser(body);
-    return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
+    const user = await this.commandBus.execute(new CreateUserCommand(body));
+    return this.usersQueryRepository.getByIdOrNotFoundFail(user._id.toString());
   }
 
   @ApiParam({ name: 'id', type: 'string' })

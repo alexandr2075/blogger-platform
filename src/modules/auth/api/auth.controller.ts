@@ -5,8 +5,10 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
 import { AuthService } from '../application/auth.service';
@@ -25,8 +27,18 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginInputDto): Promise<TokensViewDto> {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginInputDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ accessToken: string }> {
+    const tokens = await this.authService.login(dto);
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+    });
+    return { accessToken: tokens.accessToken };
   }
 
   @Post('password-recovery')
@@ -60,7 +72,7 @@ export class AuthController {
   async registrationEmailResending(
     @Body() dto: RegistrationEmailResendingInputDto,
   ): Promise<void> {
-    console.log('resending')
+    // console.log('resending')
     await this.authService.resendRegistrationEmail(dto);
   }
 

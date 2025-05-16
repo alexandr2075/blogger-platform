@@ -8,9 +8,11 @@ import { AuthGuard } from '@nestjs/passport';
 
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
+export class JwtAuthGuardForUserId extends AuthGuard('jwt') {
   constructor(private jwtService: JwtService) {
     super();
+
+    
   }
 
   canActivate(context: ExecutionContext) {
@@ -19,14 +21,15 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException();
+      return true;
     }
 
     const token = authHeader.split(' ')[1];
     
     try {
+
      const payload = this.jwtService.verify(token, {
-     secret: process.env.JWT_SECRET
+  secret: process.env.JWT_SECRET
 });
 
       request.user = payload;

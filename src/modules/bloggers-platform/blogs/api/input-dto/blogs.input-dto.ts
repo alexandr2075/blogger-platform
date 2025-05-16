@@ -1,12 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsUrl, Length, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsString, IsUrl, Length, Matches } from 'class-validator';
 
 export class CreateBlogInputDto {
   @ApiProperty({
     description: 'Название блога (1-15 символов)',
     example: 'Мой технический блог',
   })
-  @IsString()
+  @IsNotEmpty({ message: 'Name should not be empty' })
+  @IsString({ message: 'Name must be a string' })
+  @Transform(({ value }) => value?.trim())
   @Length(1, 15, {
     message: 'Название блога должно содержать от 1 до 15 символов',
   })
@@ -39,7 +42,9 @@ export class CreateBlogInputDto {
       message: 'Неверный формат URL. Должен начинаться с http:// или https://',
     },
   )
-  @Length(10, 100)
+  @Length(10, 100, {
+    message: 'websiteUrl must be longer than or equal to 10 characters'
+  })
   websiteUrl: string;
 }
 

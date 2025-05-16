@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostDocument, PostModelType } from '../domain/post.entity';
+import { LikeStatusDto, LikeStatusEnum } from '../dto/like-status.dto';
+import { Types } from 'mongoose';
+import { LikeStatus } from '../api/view-dto/extended-posts.view-dto';
+import { UserViewDto } from '../../../users/api/view-dto/users.view-dto';
 
 @Injectable()
 export class PostsRepository {
@@ -22,12 +26,15 @@ export class PostsRepository {
   }
 
   async findNonDeletedOrNotFoundFail(id: string): Promise<PostDocument> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('post not found');
+    }
     const post = await this.PostModel.findOne({
-      _id: id,
+      _id: new Types.ObjectId(id),
       deletedAt: null,
     });
     if (!post) {
-      throw new NotFoundException('post not found');
+      throw new NotFoundException('пост не найден');
     }
     return post;
   }

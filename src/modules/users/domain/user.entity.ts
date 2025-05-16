@@ -155,7 +155,7 @@ export class User {
     }
   }
 
-  confirm(id: string) {
+  confirm() {
     this.EmailConfirmed.isConfirmed = ConfirmedStatus.Confirmed;
     this.EmailConfirmed.confirmationCode = undefined;
   }

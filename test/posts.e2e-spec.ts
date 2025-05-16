@@ -5,6 +5,7 @@ import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/setup/app.setup';
 
 describe('Posts API (e2e)', () => {
+  jest.setTimeout(30000);
   let app: INestApplication;
   let httpServer: any;
   let blogId: string;
@@ -29,7 +30,9 @@ describe('Posts API (e2e)', () => {
     await request(httpServer).delete('/testing/all-data');
 
     // Create a blog for post tests
-    const createBlogResponse = await request(httpServer).post('/blogs').send({
+    const createBlogResponse = await request(httpServer).post('/blogs')
+    .auth('admin', 'qwerty')
+    .send({
       name: 'Test Blog',
       description: 'Test Description',
       websiteUrl: 'https://test.com',
@@ -54,7 +57,10 @@ describe('Posts API (e2e)', () => {
 
     it('should return posts with pagination', async () => {
       // Create a post first
-      const createResponse = await request(httpServer).post('/posts').send({
+      const createResponse = await request(httpServer)
+      .post('/posts')
+      .auth('admin', 'qwerty')
+      .send({
         title: 'Test Post',
         shortDescription: 'Test Short Description',
         content: 'Test Content',
@@ -65,10 +71,11 @@ describe('Posts API (e2e)', () => {
 
       // Get all posts
       const response = await request(httpServer).get('/posts');
-
+      console.log('response:',response.body);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(1);
       expect(response.body.items[0].title).toBe('Test Post');
+
       expect(response.body.items[0].shortDescription).toBe(
         'Test Short Description',
       );
@@ -85,7 +92,9 @@ describe('Posts API (e2e)', () => {
 
     it('should return post by id', async () => {
       // Create a post first
-      const createResponse = await request(httpServer).post('/posts').send({
+      const createResponse = await request(httpServer).post('/posts')
+      .auth('admin', 'qwerty')
+      .send({
         title: 'Test Post',
         shortDescription: 'Test Short Description',
         content: 'Test Content',
@@ -107,7 +116,9 @@ describe('Posts API (e2e)', () => {
 
   describe('POST /posts', () => {
     it('should create a new post', async () => {
-      const response = await request(httpServer).post('/posts').send({
+      const response = await request(httpServer).post('/posts')
+      .auth('admin', 'qwerty')
+      .send({
         title: 'New Post',
         shortDescription: 'New Short Description',
         content: 'New Content',
@@ -123,7 +134,9 @@ describe('Posts API (e2e)', () => {
     });
 
     it('should return 400 for invalid input', async () => {
-      const response = await request(httpServer).post('/posts').send({
+      const response = await request(httpServer).post('/posts')
+      .auth('admin', 'qwerty')
+      .send({
         // Missing required fields
       });
 
@@ -131,7 +144,9 @@ describe('Posts API (e2e)', () => {
     });
 
     it('should return 404 for non-existent blog', async () => {
-      const response = await request(httpServer).post('/posts').send({
+      const response = await request(httpServer).post('/posts')
+      .auth('admin', 'qwerty')
+      .send({
         title: 'New Post',
         shortDescription: 'New Short Description',
         content: 'New Content',
@@ -145,7 +160,9 @@ describe('Posts API (e2e)', () => {
   describe('PUT /posts/:id', () => {
     it('should update an existing post', async () => {
       // Create a post first
-      const createResponse = await request(httpServer).post('/posts').send({
+      const createResponse = await request(httpServer).post('/posts')
+      .auth('admin', 'qwerty')
+      .send({
         title: 'Test Post',
         shortDescription: 'Test Short Description',
         content: 'Test Content',
@@ -157,6 +174,7 @@ describe('Posts API (e2e)', () => {
       // Update the post
       const updateResponse = await request(httpServer)
         .put(`/posts/${postId}`)
+        .auth('admin', 'qwerty')
         .send({
           title: 'Updated Post',
           shortDescription: 'Updated Short Description',
@@ -181,6 +199,7 @@ describe('Posts API (e2e)', () => {
     it('should return 404 for non-existent post', async () => {
       const response = await request(httpServer)
         .put('/posts/nonexistentid')
+        .auth('admin', 'qwerty')
         .send({
           title: 'Updated Post',
           shortDescription: 'Updated Short Description',
@@ -195,7 +214,10 @@ describe('Posts API (e2e)', () => {
   describe('DELETE /posts/:id', () => {
     it('should delete an existing post', async () => {
       // Create a post first
-      const createResponse = await request(httpServer).post('/posts').send({
+      const createResponse = await request(httpServer)
+      .post('/posts')
+      .auth('admin', 'qwerty')
+      .send({
         title: 'Test Post',
         shortDescription: 'Test Short Description',
         content: 'Test Content',
@@ -205,9 +227,11 @@ describe('Posts API (e2e)', () => {
       const postId = createResponse.body.id;
 
       // Delete the post
-      const deleteResponse = await request(httpServer).delete(
+      const deleteResponse = await request(httpServer)
+      .delete(
         `/posts/${postId}`,
-      );
+      )
+      .auth('admin', 'qwerty');
       expect(deleteResponse.status).toBe(204);
 
       // Verify the deletion
@@ -216,7 +240,9 @@ describe('Posts API (e2e)', () => {
     });
 
     it('should return 404 for non-existent post', async () => {
-      const response = await request(httpServer).delete('/posts/nonexistentid');
+      const response = await request(httpServer)
+      .delete('/posts/nonexistentid')
+      .auth('admin', 'qwerty');
       expect(response.status).toBe(404);
     });
   });
@@ -225,6 +251,7 @@ describe('Posts API (e2e)', () => {
     it('should create a new post for a specific blog', async () => {
       const response = await request(httpServer)
         .post(`/blogs/${blogId}/posts`)
+        .auth('admin', 'qwerty')
         .send({
           title: 'Blog-specific Post',
           shortDescription: 'Blog-specific Short Description',
@@ -244,6 +271,7 @@ describe('Posts API (e2e)', () => {
     it('should return 404 for non-existent blog', async () => {
       const response = await request(httpServer)
         .post('/blogs/nonexistentblogid/posts')
+        .auth('admin', 'qwerty')
         .send({
           title: 'Blog-specific Post',
           shortDescription: 'Blog-specific Short Description',

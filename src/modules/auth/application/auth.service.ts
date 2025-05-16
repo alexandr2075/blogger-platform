@@ -18,6 +18,7 @@ import { TokensViewDto } from '../api/view-dto/tokens.view-dto';
 import { ConfirmedStatus } from '../../users/domain/email.confirmated.schema';
 import { businessService } from '../../../modules/notifications/email.service';
 import { EmailService } from '../../../core/email/email.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,7 @@ export class AuthService {
     private jwtService: JwtService,
     private usersService: UsersService,
     private emailService: EmailService,
+    private configService: ConfigService,
   ) {}
 
   async login(dto: LoginInputDto): Promise<TokensViewDto> {
@@ -35,14 +37,23 @@ export class AuthService {
     }
 
     const payload = { sub: user.id };
+    const accessToken = this.jwtService.sign(payload, { 
+      secret: this.configService.get<string>('JWT_SECRET')
+    });
+    
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET')
+    });
+
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken,
+      refreshToken,
     };
   }
 
   async register(dto: RegistrationInputDto): Promise<void> {
     const confirmationCode = uuidv4();
-    await this.usersService.createUser(dto, confirmationCode);
+    const user = await this.usersService.createUser(dto, confirmationCode);
 
     await this.emailService.sendRegistrationConfirmation(
       dto.email,
@@ -89,7 +100,7 @@ export class AuthService {
     dto: RegistrationEmailResendingInputDto,
   ): Promise<void> {
     const user = await this.usersService.findByEmail(dto.email);
-    console.log('AUTH SERVICE RESEND', user)
+    // console.log('AUTH SERVICE RESEND', user)
     if (
       !user ||
       user.EmailConfirmed.isConfirmed === ConfirmedStatus.Confirmed

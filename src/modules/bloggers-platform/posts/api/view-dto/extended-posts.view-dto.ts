@@ -9,7 +9,7 @@ export enum LikeStatus {
 @Schema({ _id: false })
 export class LikeDetails {
   @Prop({ default: Date.now })
-  addedAt: Date;
+  addedAt: string;
 
   @Prop({ required: true })
   userId: string;
