@@ -43,7 +43,7 @@ export class CreateBlogInputDto {
     },
   )
   @Length(10, 100, {
-    message: 'websiteUrl must be longer than or equal to 10 characters'
+    message: 'websiteUrl must be longer than or equal to 10 characters',
   })
   websiteUrl: string;
 }
@@ -53,6 +53,7 @@ export class BlogPostInputDto {
     description: 'Заголовок поста (1-30 символов)',
     example: 'Новые тенденции в разработке',
   })
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @Length(1, 30, {
     message: 'Заголовок должен содержать от 1 до 30 символов',
@@ -66,6 +67,7 @@ export class BlogPostInputDto {
     description: 'Краткое описание (1-100 символов)',
     example: 'Обзор новых технологий 2024 года',
   })
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @Length(1, 100, {
     message: 'Краткое описание должно содержать от 1 до 100 символов',
@@ -76,6 +78,7 @@ export class BlogPostInputDto {
     description: 'Содержание поста (1-1000 символов)',
     example: 'В этой статье мы рассмотрим основные тренды...',
   })
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @Length(1, 1000, {
     message: 'Содержание должно быть от 1 до 1000 символов',

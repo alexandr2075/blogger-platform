@@ -11,7 +11,7 @@ export class GetPostCommentsQueryParams extends BaseQueryParams {
   @ApiPropertyOptional({
     enum: PostCommentsSortBy,
     description: 'Поле для сортировки комментариев',
-    default: PostCommentsSortBy.CreatedAt
+    default: PostCommentsSortBy.CreatedAt,
   })
   @IsEnum(PostCommentsSortBy)
   sortBy = PostCommentsSortBy.CreatedAt;

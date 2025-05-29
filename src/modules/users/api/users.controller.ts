@@ -32,7 +32,7 @@ export class UsersController {
   constructor(
     private usersQueryRepository: UsersQueryRepository,
     private usersService: UsersService,
-    private commandBus: CommandBus
+    private commandBus: CommandBus,
   ) {}
 
   @Public()

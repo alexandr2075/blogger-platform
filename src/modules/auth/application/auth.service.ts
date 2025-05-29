@@ -16,7 +16,6 @@ import { RegistrationInputDto } from '../api/input-dto/registration.input-dto';
 import { MeViewDto } from '../api/view-dto/me.view-dto';
 import { TokensViewDto } from '../api/view-dto/tokens.view-dto';
 import { ConfirmedStatus } from '../../users/domain/email.confirmated.schema';
-import { businessService } from '../../../modules/notifications/email.service';
 import { EmailService } from '../../../core/email/email.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -37,12 +36,12 @@ export class AuthService {
     }
 
     const payload = { sub: user.id };
-    const accessToken = this.jwtService.sign(payload, { 
-      secret: this.configService.get<string>('JWT_SECRET')
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
     });
-    
+
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET')
+      secret: this.configService.get<string>('JWT_SECRET'),
     });
 
     return {
@@ -81,7 +80,7 @@ export class AuthService {
     if (!user) return; // Не сообщаем о существовании пользователя
 
     const recoveryCode = uuidv4();
-    await this.usersService.setRecoveryCode(user.id, recoveryCode);
+    await this.usersService.setRecoveryCode(user._id.toString(), recoveryCode);
     await this.emailService.sendPasswordRecovery(dto.email, recoveryCode);
     // await businessService.sendConfirmationCodeToEmail(dto.email, recoveryCode);
   }

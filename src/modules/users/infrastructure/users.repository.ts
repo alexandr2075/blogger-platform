@@ -32,7 +32,7 @@ export class UsersRepository {
     });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string) {
     return this.UserModel.findOne({ email });
   }
 
@@ -45,15 +45,14 @@ export class UsersRepository {
   }
 
   async findByRecoveryCode(code: string): Promise<User | null> {
-    return this.UserModel.findOne({ recoveryCode: code });
+    return this.UserModel.findOne({ 'EmailConfirmed.confirmationCode': code });
   }
 
   async findNonDeletedOrNotFoundFail(id: string): Promise<UserDocument> {
-    
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException('blog not found');
     }
-    
+
     const user = await this.UserModel.findOne({
       _id: new Types.ObjectId(id),
       deletedAt: null,

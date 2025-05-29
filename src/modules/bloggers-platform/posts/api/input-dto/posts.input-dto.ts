@@ -1,16 +1,20 @@
 import { IsString, IsNotEmpty, Length } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreatePostInputDto {
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
   @Length(1, 30)
   title: string;
 
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
   @Length(1, 100)
   shortDescription: string;
 
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
   @Length(1, 1000)

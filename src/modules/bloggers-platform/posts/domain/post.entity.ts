@@ -2,7 +2,11 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import { CreatePostInputDtoWithBlogName } from '../api/input-dto/posts.input-dto';
 import { UpdatePostInputDto } from '../api/input-dto/update-post.input-dto';
-import { ExtendedLikesInfo, LikeDetails, LikeStatus } from '../api/view-dto/extended-posts.view-dto';
+import {
+  ExtendedLikesInfo,
+  LikeDetails,
+  LikeStatus,
+} from '../api/view-dto/extended-posts.view-dto';
 
 @Schema({ timestamps: true, optimisticConcurrency: true, versionKey: '__v' })
 export class Post {
@@ -46,11 +50,11 @@ export class Post {
     post.deletedAt = null;
     post.likesCountArray = [];
     post.dislikesCountArray = [];
-    extendedLikesInfo: {
-      likesCount: post.likesCountArray ? post.likesCountArray.length : null;
-      dislikesCount: post.dislikesCountArray? post.dislikesCountArray.length : null;
-      myStatus: LikeStatus.None;
-      newestLikes:[];
+    post.extendedLikesInfo = {
+      likesCount: 0,
+      dislikesCount: 0,
+      myStatus: LikeStatus.None,
+      newestLikes: [],
     };
     return post as PostDocument;
   }

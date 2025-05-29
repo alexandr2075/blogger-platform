@@ -27,12 +27,16 @@ import { GetPostCommentsQueryParams } from './get-post-comments-query-params.inp
 import { BasicAuthGuard } from '../../../../modules/users/guards/basic/basic-auth.guard';
 import { ApiBasicAuth } from '@nestjs/swagger';
 import { JwtAuthGuardForUserId } from '../../../../core/guards/jwt-auth-for-user-id.guard';
+import { PostsRepository } from '../infrastructure/posts.repository';
+import { PostDocument } from '../domain/post.entity';
+import { CommentViewDto } from '../../comments/dto/comments.view-dto';
 
 @Controller('posts')
 export class PostsController {
   constructor(
     private postsService: PostsService,
     private postsQueryRepository: PostsQueryRepository,
+    private postsRepository: PostsRepository,
   ) {}
   @UseGuards(JwtAuthGuardForUserId)
   @Get()
@@ -49,6 +53,14 @@ export class PostsController {
     @CurrentUser() userId?: string,
   ): Promise<PostViewDto> {
     return await this.postsQueryRepository.getByIdOrNotFoundFail(id, userId);
+  }
+
+  @Get(':id/doc')
+  async getByIdForGetPostDocument(
+    @Param('id') id: string,
+    // @CurrentUser() userId?: string,
+  ): Promise<PostDocument> {
+    return await this.postsRepository.findNonDeletedOrNotFoundFail(id);
   }
 
   @UseGuards(BasicAuthGuard)
@@ -92,7 +104,7 @@ export class PostsController {
   async getPostComments(
     @Param('postId') postId: string,
     @Query() query: GetPostCommentsQueryParams,
-  ): Promise<PaginatedViewDto<Comment[]>> {
+  ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     return this.postsService.getPostComments(postId, query);
   }
 
@@ -102,7 +114,7 @@ export class PostsController {
     @Param('postId') postId: string,
     @Body() createCommentDto: CreateCommentDto,
     @CurrentUser() userId: string,
-  ): Promise<Comment> {
+  ): Promise<CommentViewDto> {
     return this.postsService.createComment(postId, userId, createCommentDto);
   }
 }

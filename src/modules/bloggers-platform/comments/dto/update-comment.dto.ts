@@ -6,7 +6,7 @@ export class UpdateCommentDto {
     description: 'Контент комментария',
     example: 'Это обновленный комментарий',
     minLength: 20,
-    maxLength: 300
+    maxLength: 300,
   })
   @IsString()
   @IsNotEmpty()

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsEmail, IsOptional, IsUUID, Length } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsUUID,
+  Length,
+} from 'class-validator';
 import { UUID } from 'crypto';
 
 export class CreateUserDomainDto {

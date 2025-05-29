@@ -8,8 +8,8 @@ import { UsersQueryRepository } from './infrastructure/users.query-repository';
 import { UsersRepository } from './infrastructure/users.repository';
 import { CreateUserUseCase } from './application/use-cases/create-user-use-case';
 
-const adapters = [UsersRepository, UsersQueryRepository]
-const useCases = [CreateUserUseCase]
+const adapters = [UsersRepository, UsersQueryRepository];
+const useCases = [CreateUserUseCase];
 
 @Module({
   imports: [

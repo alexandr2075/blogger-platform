@@ -5,8 +5,8 @@ import { GetPostsQueryParams } from '../api/get-posts-query-params.input-dto';
 import { PostViewDto } from '../api/view-dto/posts.view-dto';
 import { Post, PostModelType } from '../domain/post.entity';
 import { Types } from 'mongoose';
-import { UserModelType } from '../../../users/domain/user.entity';
 import { UsersQueryRepository } from '../../../../modules/users/infrastructure/users.query-repository';
+import { SortDirection } from '../../../../core/dto/base.query-params.input-dto';
 
 @Injectable()
 export class PostsQueryRepository {
@@ -16,8 +16,10 @@ export class PostsQueryRepository {
     private usersQueryRepository: UsersQueryRepository,
   ) {}
 
-  async getByIdOrNotFoundFail(id: string, userId?: string): Promise<PostViewDto> {
-    
+  async getByIdOrNotFoundFail(
+    id: string,
+    userId?: string,
+  ): Promise<PostViewDto> {
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException('invalid post id');
     }
@@ -38,11 +40,10 @@ export class PostsQueryRepository {
     query: GetPostsQueryParams,
     userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-   
-   const user = userId 
-   ? await this.usersQueryRepository.getByIdOrNotFoundFail(userId)
-   : null;
-    
+    const user = userId
+      ? await this.usersQueryRepository.getByIdOrNotFoundFail(userId)
+      : null;
+
     const filter: any = { deletedAt: null };
 
     if (query.blogId) {
@@ -51,15 +52,18 @@ export class PostsQueryRepository {
 
     const [items, totalCount] = await Promise.all([
       this.PostModel.find(filter)
-        .sort({ [query.sortBy]: query.sortDirection === 'asc' ? 1 : -1 })
+        .sort({
+          [query.sortBy]: query.sortDirection === SortDirection.Asc ? 1 : -1,
+        })
         .skip(query.calculateSkip())
         .limit(query.pageSize)
         .exec(),
       this.PostModel.countDocuments(filter),
     ]);
-
     return PaginatedViewDto.mapToView({
-      items: items.map((post) => PostViewDto.mapToView(post, userId, user?.login)),
+      items: items.map((post) =>
+        PostViewDto.mapToView(post, userId, user?.login),
+      ),
       page: query.pageNumber,
       size: query.pageSize,
       totalCount,

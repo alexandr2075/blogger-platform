@@ -19,7 +19,7 @@ export class GetPostsQueryParams extends BaseQueryParams {
   @ApiPropertyOptional({
     enum: PostsSortBy,
     description: 'Field for sorting posts',
-    default: PostsSortBy.CreatedAt
+    default: PostsSortBy.CreatedAt,
   })
   @IsEnum(PostsSortBy)
   sortBy = PostsSortBy.CreatedAt;

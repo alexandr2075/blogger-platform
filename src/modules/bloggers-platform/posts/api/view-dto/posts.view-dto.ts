@@ -16,14 +16,17 @@ export class PostViewDto {
     newestLikes: LikeDetails[];
   };
 
-  static mapToView(post: PostDocument, userId?: string, login?: string): PostViewDto {
+  static mapToView(
+    post: PostDocument,
+    userId?: string,
+    login?: string,
+  ): PostViewDto {
     let myStatus = LikeStatus.None;
-    
     if (userId) {
       if (post.likesCountArray.includes(userId)) myStatus = LikeStatus.Like;
-      else if (post.dislikesCountArray.includes(userId)) myStatus = LikeStatus.Dislike;
+      else if (post.dislikesCountArray.includes(userId))
+        myStatus = LikeStatus.Dislike;
     }
-
     return {
       id: post._id.toString(),
       title: post.title,

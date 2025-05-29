@@ -20,7 +20,10 @@ export class CommentsRepository {
     return this.commentModel.findById(id);
   }
 
-  async update(commentId: string, updateCommentDto: UpdateCommentDto): Promise<void> {
+  async update(
+    commentId: string,
+    updateCommentDto: UpdateCommentDto,
+  ): Promise<void> {
     await this.commentModel.findByIdAndUpdate(commentId, {
       content: updateCommentDto.content,
     });
@@ -30,7 +33,11 @@ export class CommentsRepository {
     await this.commentModel.findByIdAndDelete(commentId);
   }
 
-  async updateLikeStatus(commentId: Types.ObjectId, likeStatusDto: LikeStatusDto, userId: string): Promise<void> {
+  async updateLikeStatus(
+    commentId: Types.ObjectId,
+    likeStatusDto: LikeStatusDto,
+    userId: string,
+  ): Promise<void> {
     const comment = await this.commentModel.findById(commentId);
     if (!comment) {
       throw new NotFoundException('Комментарий не найден');
@@ -50,7 +57,7 @@ export class CommentsRepository {
       case LikeStatusEnum.None:
         updateQuery.$pull = {
           likesCountArray: userId,
-          dislikesCountArray: userId
+          dislikesCountArray: userId,
         };
         break;
     }
@@ -59,4 +66,4 @@ export class CommentsRepository {
       await this.commentModel.updateOne({ _id: commentId }, updateQuery);
     }
   }
-  }
+}

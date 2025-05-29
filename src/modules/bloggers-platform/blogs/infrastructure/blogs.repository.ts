@@ -8,6 +8,9 @@ export class BlogsRepository {
   constructor(@InjectModel(Blog.name) private BlogModel: BlogModelType) {}
 
   async findById(id: string): Promise<BlogDocument | null> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('invalid post id');
+    }
     return this.BlogModel.findOne({
       _id: id,
       deletedAt: null,
@@ -19,9 +22,6 @@ export class BlogsRepository {
   }
 
   async findOrNotFoundFail(id: string): Promise<BlogDocument> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('invalid post id');
-    }
     const blog = await this.findById(id);
 
     if (!blog) {
@@ -32,10 +32,6 @@ export class BlogsRepository {
   }
 
   async findNonDeletedOrNotFoundFail(id: string): Promise<BlogDocument> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('invalid post id');
-    }
-    
     const blog = await this.findById(id);
 
     if (!blog) {

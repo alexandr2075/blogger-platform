@@ -1,9 +1,7 @@
-import request from 'supertest';
-
-export const createComment = async (
+export const createCommentGetComment = async (
   request: any,
   httpServer: any,
-): Promise<{ accessToken: string; postId: string; userId: string, commentId: string }> => {
+) => {
   try {
     const createBlogResponse = await request(httpServer)
       .post('/blogs')
@@ -50,12 +48,7 @@ export const createComment = async (
         content: 'TestContentLonger20MustBe',
       });
 
-    return {
-      accessToken: login.body.accessToken,
-      postId: createResponse.body.id,
-      userId: me.body.userId,
-      commentId: createComment.body._id.toString(),
-    };
+    return createComment;
   } catch (error) {
     throw new Error(`Failed to create comment: ${error.message}`);
   }

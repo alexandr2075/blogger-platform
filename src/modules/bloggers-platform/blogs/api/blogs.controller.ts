@@ -11,7 +11,9 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBasicAuth } from '@nestjs/swagger';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
+import { BasicAuthGuard } from '../../../../modules/users/guards/basic/basic-auth.guard';
 import { GetPostsQueryParams } from '../../posts/api/get-posts-query-params.input-dto';
 import { PostViewDto } from '../../posts/api/view-dto/posts.view-dto';
 import { PostsService } from '../../posts/application/posts.service';
@@ -25,11 +27,9 @@ import {
 } from './input-dto/blogs.input-dto';
 import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
 import { BlogViewDto } from './view-dto/blogs.view-dto';
-import { ApiBasicAuth } from '@nestjs/swagger';
-import { BasicAuthGuard } from '../../../../modules/users/guards/basic/basic-auth.guard';
-import { Public } from '../../../../modules/users/guards/decorators/public.decorator';
+import { JwtAuthGuardForUserId } from '../../../../core/guards/jwt-auth-for-user-id.guard';
+import { CurrentUser } from '../../../../core/decorators/current-user.decorator';
 
-@UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
 @Controller('blogs')
 export class BlogsController {
@@ -40,40 +40,39 @@ export class BlogsController {
     private postsQueryRepository: PostsQueryRepository,
   ) {}
 
-  @Public()
   @Get(':id')
   async getById(@Param('id') id: string): Promise<BlogViewDto> {
     return this.blogsQueryRepository.getByIdOrNotFoundFail(id);
   }
 
-  @Public()
   @Get()
   async getAll(
     @Query() query: GetBlogsQueryParams,
   ): Promise<PaginatedViewDto<BlogViewDto[]>> {
     return this.blogsQueryRepository.getAll(query);
   }
-
+  @UseGuards(BasicAuthGuard)
   @Post()
   async createBlog(@Body() body: CreateBlogInputDto): Promise<BlogViewDto> {
     const blogId = await this.blogsService.createBlog(body);
     return this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
   }
 
-  
   //get POSTS by blogId
-  @Public()
+  @UseGuards(JwtAuthGuardForUserId)
   @Get(':blogId/posts')
   async getPostByBlogId(
     @Query() query: GetPostsQueryParams,
     @Param('blogId') blogId: string,
+    @CurrentUser() userId: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     await this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
     query.blogId = blogId;
-    return this.postsQueryRepository.getAll(query);
+    return this.postsQueryRepository.getAll(query, userId);
   }
 
   //create new POST by blogId
+  @UseGuards(BasicAuthGuard)
   @Post(':blogId/posts')
   async createPostByBlogId(
     @Body() body: BlogPostInputDto,
@@ -82,7 +81,7 @@ export class BlogsController {
     const blog = await this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
     return this.postsService.createPost({ ...body, blogId: blog.id });
   }
-
+  @UseGuards(BasicAuthGuard)
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateBlog(
@@ -91,7 +90,7 @@ export class BlogsController {
   ): Promise<void> {
     await this.blogsService.updateBlog(id, body);
   }
-
+  @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteBlog(@Param('id') id: string): Promise<void> {

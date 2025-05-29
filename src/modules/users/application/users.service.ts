@@ -37,10 +37,7 @@ export class UsersService {
     return user;
   }
 
-  async createUser(
-    dto: CreateUserDto,
-    confirmationCode?: string,
-  ) {
+  async createUser(dto: CreateUserDto, confirmationCode?: string) {
     const userLogin = await this.usersRepository.findByLoginOrEmail(dto.login);
     const userEmail = await this.usersRepository.findByLoginOrEmail(dto.email);
 
@@ -62,7 +59,9 @@ export class UsersService {
       await this.usersRepository.save(user);
     } catch (e) {
       if (e.code === 11000) {
-        throw new BadRequestException('Пользователь с таким логином или email уже существует');
+        throw new BadRequestException(
+          'Пользователь с таким логином или email уже существует',
+        );
       }
       throw e;
     }
@@ -83,7 +82,6 @@ export class UsersService {
     const user = await this.usersRepository.findOrNotFoundFail(id);
 
     user.confirm();
-    console.log('confirmUser:', user);
     await this.usersRepository.save(user);
 
     return user._id.toString();
@@ -100,7 +98,7 @@ export class UsersService {
     return this.usersRepository.findByConfirmationCode(code);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string) {
     return this.usersRepository.findByEmail(email);
   }
 
@@ -124,7 +122,7 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
-  async findByRecoveryCode(code: string): Promise<User | null> {
+  async findByRecoveryCode(code: string) {
     return this.usersRepository.findByRecoveryCode(code);
   }
 

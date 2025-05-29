@@ -16,7 +16,6 @@ export class EmailService {
         pass: this.configService.get('SMTP_PASSWORD'),
       },
     });
-   
   }
 
   async sendRegistrationConfirmation(
@@ -58,4 +57,4 @@ export class EmailService {
       `,
     });
   }
-} 
+}

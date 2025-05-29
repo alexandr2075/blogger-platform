@@ -3,8 +3,8 @@ import {
   Catch,
   ExceptionFilter,
   HttpStatus,
- HttpException,
-} from '@nestjs/common';  
+  HttpException,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { DomainExceptionCode } from '../domain-exception-codes';
 import { ErrorResponseBody } from './error-response-body.type';
@@ -19,12 +19,10 @@ export class AllHttpExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-
     //Если сработал этот фильтр, то пользователю улетит 500я ошибка
     const message = exception.message || 'Unknown exception occurred.';
     // const status = HttpStatus.INTERNAL_SERVER_ERROR;
-    
-    
+
     const status = exception.getStatus();
     const responseBody = this.buildResponseBody(request.url, message);
 
@@ -50,7 +48,7 @@ export class AllHttpExceptionsFilter implements ExceptionFilter {
     }
 
     return {
-      errorsMessages: [{message, field: message.split(' ')[0]}],
+      errorsMessages: [{ message, field: message.split(' ')[0] }],
     };
     // return {
     //   timestamp: new Date().toISOString(),

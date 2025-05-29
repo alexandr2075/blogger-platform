@@ -6,13 +6,15 @@ import { RemoveController } from './api/remove.controller';
 import { RemoveService } from './application/remove.service';
 import { RemoveRepository } from './infrastructure/remove.repository';
 import { User, UserSchema } from '../../users/domain/user.entity';
+import { Comment, CommentSchema } from '../comments/domain/comment.entity';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: Blog.name, schema: BlogSchema },
       { name: Post.name, schema: PostSchema },
+      { name: Blog.name, schema: BlogSchema },
       { name: User.name, schema: UserSchema },
+      { name: Comment.name, schema: CommentSchema },
     ]),
   ],
   controllers: [RemoveController],

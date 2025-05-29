@@ -1,4 +1,4 @@
-import { CommentDocument } from "../domain/comment.entity";
+import { CommentDocument } from '../domain/comment.entity';
 
 export enum LikeStatus {
   None = 'None',
@@ -24,27 +24,49 @@ export class CommentViewDto {
   createdAt: Date;
   likesInfo?: LikesInfo;
 
-  static mapToView(comment: CommentDocument): CommentViewDto {
+  static mapToView(comment: CommentDocument, userId?: string): CommentViewDto {
     if (!comment || !comment._id) {
       throw new Error('Invalid comment document');
     }
-    
-    return {
-      id: comment._id.toString(),
-      content: comment.content,
-      commentatorInfo: {
-        userId: comment.userId,
-        userLogin: comment.userLogin,
-      },
-      createdAt: comment.createdAt,
-      likesInfo: {
-        likesCount: comment.likesCountArray.length,
-        dislikesCount: comment.dislikesCountArray.length,
-        myStatus: comment.likesCountArray.includes(comment.userId) ? LikeStatus.Like
-          : comment.dislikesCountArray.includes(comment.userId) ? LikeStatus.Dislike
-          : LikeStatus.None,
-      },
-    };
+    if (
+      (userId && comment.likesCountArray?.includes(userId)) ||
+      (userId && comment.dislikesCountArray?.includes(userId))
+    ) {
+      return {
+        id: comment._id.toString(),
+        content: comment.content,
+        commentatorInfo: {
+          userId: comment.userId,
+          userLogin: comment.userLogin,
+        },
+        createdAt: comment.createdAt,
+        likesInfo: {
+          likesCount: comment.likesCountArray.length,
+          dislikesCount: comment.dislikesCountArray.length,
+          myStatus: comment.likesCountArray.includes(comment.userId)
+            ? LikeStatus.Like
+            : comment.dislikesCountArray.includes(comment.userId)
+              ? LikeStatus.Dislike
+              : LikeStatus.None,
+        },
+      };
+    } else {
+      return {
+        id: comment._id.toString(),
+        content: comment.content,
+        commentatorInfo: {
+          userId: comment.userId,
+          userLogin: comment.userLogin,
+          // userId: '',
+          // userLogin: '',
+        },
+        createdAt: comment.createdAt,
+        likesInfo: {
+          likesCount: comment.likesCountArray.length,
+          dislikesCount: comment.dislikesCountArray.length,
+          myStatus: LikeStatus.None,
+        },
+      };
+    }
   }
 }
-

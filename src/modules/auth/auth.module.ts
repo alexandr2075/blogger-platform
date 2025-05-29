@@ -9,13 +9,13 @@ import { AuthService } from './application/auth.service';
 import { NotificationsModule } from '../../modules/notifications/notifications.module';
 import { EmailModule } from '../../core/email/email.module';
 
-
 @Module({
   imports: [
     EmailModule,
     UsersModule,
     NotificationsModule,
-    JwtModule.registerAsync({ // Используйте registerAsync для асинхронной конфигурации
+    JwtModule.registerAsync({
+      // Используйте registerAsync для асинхронной конфигурации
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),

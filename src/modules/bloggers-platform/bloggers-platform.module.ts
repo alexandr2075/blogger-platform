@@ -34,9 +34,9 @@ import { User, UserSchema } from '../users/domain/user.entity';
     PostsService,
     PostsRepository,
     PostsQueryRepository,
-    UsersQueryRepository, 
+    UsersQueryRepository,
     CommentsService,
-    CommentsRepository
+    CommentsRepository,
   ],
   exports: [],
 })
