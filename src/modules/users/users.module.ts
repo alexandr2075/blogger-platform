@@ -7,9 +7,11 @@ import { User, UserSchema } from './domain/user.entity';
 import { UsersQueryRepository } from './infrastructure/users.query-repository';
 import { UsersRepository } from './infrastructure/users.repository';
 import { CreateUserUseCase } from './application/use-cases/create-user-use-case';
+import { DeleteUserUseCase } from './application/use-cases/delete-user-use-case';
+import { UpdateUserUseCase } from './application/use-cases/update-user-use-case';
 
-const adapters = [UsersRepository, UsersQueryRepository];
-const useCases = [CreateUserUseCase];
+const adapters = [UsersRepository, UsersQueryRepository]
+const useCases = [CreateUserUseCase, DeleteUserUseCase, UpdateUserUseCase]
 
 @Module({
   imports: [

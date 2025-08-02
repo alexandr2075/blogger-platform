@@ -1,25 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { setupApp } from '../src/setup/app.setup';
-import { EmailService } from '../src/core/email/email.service';
+import { AppModule } from '@/app.module';
+import { setupApp } from '@/setup/app.setup';
+import { Server } from 'http';
+import { registrationAndLoginUser } from './test-helper/registration-login';
+import jwt from 'jsonwebtoken';
 
-describe('Users API (e2e)', () => {
+describe('Security/devices API (e2e)', () => {
   let app: INestApplication;
-  let httpServer: any;
+  let httpServer: Server;
 
   beforeAll(async () => {
-    const emailServiceMock = {
-      sendRegistrationConfirmation: jest.fn(),
-    };
-    const testingModuleBuilder = Test.createTestingModule({
+    const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    });
-    const moduleFixture: TestingModule = await testingModuleBuilder
-      .overrideProvider(EmailService)
-      .useValue(emailServiceMock)
-      .compile();
+    }).compile();
 
     app = moduleFixture.createNestApplication();
     setupApp(app);
@@ -36,235 +31,111 @@ describe('Users API (e2e)', () => {
     await request(httpServer).delete('/testing/all-data');
   });
 
-  describe('GET /users', () => {
-    it('should return empty array when no users exist', async () => {
-      const response = await request(httpServer)
-        .get('/users')
-        .auth('admin', 'qwerty');
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({
-        pagesCount: 0,
-        page: 1,
-        pageSize: 10,
-        totalCount: 0,
-        items: [],
+  describe('GET /devices', () => {
+    it('should return devices by userId', async () => {
+      await request(httpServer).post('/auth/registration').send({
+        login: 'testuser',
+        password: 'password123',
+        email: 'test@example.com',
       });
-    });
 
-    it('should return users with pagination', async () => {
-      // Create a user first
-      const createResponse = await request(httpServer)
-        .post('/users')
-        .auth('admin', 'qwerty')
+      const firstLoginResponse = await request(httpServer)
+        .post('/auth/login')
+        .set(
+          'User-Agent',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+        )
+        .set('X-Forwarded-For', '192.168.1.1')
         .send({
-          login: 'testuser',
+          loginOrEmail: 'testuser',
           password: 'password123',
-          email: 'test@example.com',
         });
 
-      expect(createResponse.status).toBe(201);
+      const secondLoginResponse = await request(httpServer)
+        .post('/auth/login')
+        .set(
+          'User-Agent',
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+        )
+        .set('X-Forwarded-For', '192.168.1.2')
+        .send({
+          loginOrEmail: 'testuser',
+          password: 'password123',
+        });
 
-      // Get all users
-      const response = await request(httpServer)
-        .get('/users')
-        .auth('admin', 'qwerty');
-      expect(response.status).toBe(200);
-      expect(response.body.totalCount).toBe(1);
-      expect(response.body.items[0].login).toBe('testuser');
-      expect(response.body.items[0].email).toBe('test@example.com');
-      // Password should not be returned
-      expect(response.body.items[0].password).toBeUndefined();
-    });
-
-    it('should return count users', async () => {
-      for (let i = 1; i <= 15; i++) {
+      // Получаем refreshToken из Set-Cookie заголовка
+      const cookies = firstLoginResponse.headers['set-cookie'];
+      if (cookies) {
         const response = await request(httpServer)
-          .post('/users')
-          .auth('admin', 'qwerty')
-          .send({
-            login: `testuser${i}`,
-            password: `password${i}`,
-            email: `testuser${i}@example.com`,
-          });
-
-        expect(response.status).toBe(201);
-        expect(response.body.login).toBe(`testuser${i}`);
+          .get('/security/devices')
+          .set('Cookie', cookies);
+        expect(response.status).toBe(200);
+        response.body.forEach(device => {
+          expect(device).toEqual(
+            expect.objectContaining({
+              deviceId: expect.any(String),
+              ip: expect.any(String),
+              lastActiveDate: expect.stringMatching(/\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z)/),
+              title: expect.any(String)
+            })
+          );
+        });
       }
-
-      // Get all users
-      const response = await request(httpServer)
-        .get('/users')
-        .auth('admin', 'qwerty');
-      expect(response.status).toBe(200);
-      expect(response.body.totalCount).toBe(15);
-    });
-
-    it('should filter users by search term', async () => {
-      // Create two users
-      await request(httpServer).post('/users').auth('admin', 'qwerty').send({
-        login: 'firstuser',
-        password: 'password123',
-        email: 'first@example.com',
-      });
-
-      await request(httpServer).post('/users').auth('admin', 'qwerty').send({
-        login: 'seconduser',
-        password: 'password123',
-        email: 'second@example.com',
-      });
-
-      // Search for "first"
-      const response = await request(httpServer)
-        .get('/users')
-        .auth('admin', 'qwerty')
-        .query({ searchLoginTerm: 'first' });
-
-      expect(response.status).toBe(200);
-      expect(response.body.totalCount).toBe(1);
-      expect(response.body.items[0].login).toBe('firstuser');
     });
   });
 
-  describe('GET /users/:id', () => {
-    it('should return 404 for non-existent user', async () => {
-      const response = await request(httpServer)
-        .get('/users/nonexistentid')
-        .auth('admin', 'qwerty');
-      expect(response.status).toBe(404);
+  describe('DELETE /devices/deviceId', () => {
+    it('should delete device by deviceId', async () => {
+      const { refreshToken } = await registrationAndLoginUser(
+        request,
+        httpServer,
+      );
+
+      const tokenValue = refreshToken.split(';')[0].split('=')[1];
+
+      const payload = jwt.verify(
+        tokenValue,
+        process.env.REFRESH_TOKEN_SECRET || 'secretOrKey_forTest',
+      ) as jwt.JwtPayload;
+      const response = await request(httpServer).delete(
+        `/security/devices/${payload.deviceId}`,
+      );
+
+      expect(response.status).toBe(401);
     });
 
-    it('should return user by id', async () => {
-      // Create a user first
-      const createResponse = await request(httpServer)
-        .post('/users')
-        .auth('admin', 'qwerty')
-        .send({
-          login: 'testuser',
-          password: 'password123',
-          email: 'test@example.com',
-        });
+    it('Should return forbidden error ; status 403, if delete the entity that was created by another user', async () => {
+      const user1 = await registrationAndLoginUser(
+        request,
+        httpServer,
+      );
 
-      const userId = createResponse.body.id;
+      const user2 = await registrationAndLoginUser(
+        request,
+        httpServer,
+        {
+          login: 'user2',
+          password: '123456',
+          email: 'user2@example.com',
+        },
+      );
 
-      // Get user by id
+      const tokenValueUser1 = user1.refreshToken.split(';')[0].split('=')[1];
+      
+      const payloadUser1 = jwt.verify(
+        tokenValueUser1,
+        process.env.REFRESH_TOKEN_SECRET || 'secretOrKey_forTest',
+      ) as jwt.JwtPayload;
+
+
       const response = await request(httpServer)
-        .get(`/users/${userId}`)
-        .auth('admin', 'qwerty');
+      .delete(
+        `/security/devices/${payloadUser1.deviceId}`,
+      )
+      .set('Cookie', user2.refreshToken);
 
-      expect(response.status).toBe(200);
-      expect(response.body.login).toBe('testuser');
-      expect(response.body.email).toBe('test@example.com');
-      // Password should not be returned
-      expect(response.body.password).toBeUndefined();
-    });
-  });
 
-  describe('POST /users', () => {
-    it('should create a new user', async () => {
-      const response = await request(httpServer)
-        .post('/users')
-        .auth('admin', 'qwerty')
-        .send({
-          login: 'newuser',
-          password: 'password123',
-          email: 'new@example.com',
-        });
-
-      expect(response.status).toBe(201);
-      expect(response.body.login).toBe('newuser');
-      expect(response.body.email).toBe('new@example.com');
-      expect(response.body.id).toBeDefined();
-      // Password should not be returned
-      expect(response.body.password).toBeUndefined();
-    });
-
-    it('should return 400 for invalid input', async () => {
-      const response = await request(httpServer)
-        .post('/users')
-        .auth('admin', 'qwerty')
-        .send({
-          // Missing required fields
-        });
-
-      expect(response.status).toBe(400);
-    });
-
-    it('should return 400 for duplicate login', async () => {
-      // Create first user
-      await request(httpServer).post('/users').auth('admin', 'qwerty').send({
-        login: 'duplicateuser',
-        password: 'password123',
-        email: 'first@example.com',
-      });
-
-      // Try to create user with same login
-      const response = await request(httpServer)
-        .post('/users')
-        .auth('admin', 'qwerty')
-        .send({
-          login: 'duplicateuser',
-          password: 'password123',
-          email: 'second@example.com',
-        });
-
-      expect(response.status).toBe(400);
-    });
-
-    it('should return 400 for duplicate email', async () => {
-      // Create first user
-      await request(httpServer).post('/users').auth('admin', 'qwerty').send({
-        login: 'firstuser',
-        password: 'password123',
-        email: 'duplicate@example.com',
-      });
-
-      // Try to create user with same email
-      const response = await request(httpServer)
-        .post('/users')
-        .auth('admin', 'qwerty')
-        .send({
-          login: 'seconduser',
-          password: 'password123',
-          email: 'duplicate@example.com',
-        });
-
-      expect(response.status).toBe(400);
-    });
-  });
-
-  describe('DELETE /users/:id', () => {
-    it('should delete an existing user', async () => {
-      // Create a user first
-      const createResponse = await request(httpServer)
-        .post('/users')
-        .auth('admin', 'qwerty')
-        .send({
-          login: 'testuser',
-          password: 'password123',
-          email: 'test@example.com',
-        });
-
-      const userId = createResponse.body.id;
-
-      // Delete the user
-      const deleteResponse = await request(httpServer)
-        .delete(`/users/${userId}`)
-        .auth('admin', 'qwerty');
-      expect(deleteResponse.status).toBe(204);
-
-      // Verify the deletion
-      const getResponse = await request(httpServer)
-        .get(`/users/${userId}`)
-        .auth('admin', 'qwerty');
-      expect(getResponse.status).toBe(404);
-    });
-
-    it('should return 404 for non-existent user', async () => {
-      const response = await request(httpServer)
-        .delete('/users/nonexistentid')
-        .auth('admin', 'qwerty');
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(403);
     });
   });
 });

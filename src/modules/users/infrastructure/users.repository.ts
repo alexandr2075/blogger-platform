@@ -15,10 +15,12 @@ export class UsersRepository {
   }
 
   async findOrNotFoundFail(id: string): Promise<UserDocument> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('user not found');
+    }
     const user = await this.findById(id);
 
     if (!user) {
-      //TODO: replace with domain exception
       throw new NotFoundException('user not found');
     }
 

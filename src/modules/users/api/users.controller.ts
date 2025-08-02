@@ -24,6 +24,9 @@ import { CreateUserInputDto } from './input-dto/users.input-dto';
 import { UserViewDto } from './view-dto/users.view-dto';
 import { ObjectIdValidationPipe } from '../../../core/pipes/object-id-validation-transformation-pipe.service';
 import { CreateUserCommand } from '../application/use-cases/create-user-use-case';
+import { UserDocument } from '../domain/user.entity';
+import { UpdateUserCommand } from '../application/use-cases/update-user-use-case';
+import { DeleteUserCommand } from '../application/use-cases/delete-user-use-case';
 
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
@@ -53,7 +56,9 @@ export class UsersController {
 
   @Post()
   async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
-    const user = await this.commandBus.execute(new CreateUserCommand(body));
+    const user: UserDocument = await this.commandBus.execute(
+      new CreateUserCommand(body),
+    );
     return this.usersQueryRepository.getByIdOrNotFoundFail(user._id.toString());
   }
 
@@ -63,13 +68,15 @@ export class UsersController {
     @Param('id') id: string,
     @Body() body: UpdateUserInputDto,
   ): Promise<UserViewDto> {
-    const userId = await this.usersService.updateUser(id, body);
+    const userId: string = await this.commandBus.execute(
+      new UpdateUserCommand(body, id),
+    );
     return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string): Promise<void> {
-    return this.usersService.deleteUser(id);
+    await this.commandBus.execute(new DeleteUserCommand(id));
   }
 }

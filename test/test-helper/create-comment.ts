@@ -19,7 +19,7 @@ export const createComment = async (
 
     const blogId: string = createBlogResponse.body.id;
 
-    const createResponse = await request(httpServer)
+    const createPostResponse = await request(httpServer)
       .post('/posts')
       .auth('admin', 'qwerty')
       .send({
@@ -29,7 +29,7 @@ export const createComment = async (
         blogId: blogId,
       });
 
-    const postId: string = createResponse.body.id;
+    const postId: string = createPostResponse.body.id;
 
     await request(httpServer).post('/auth/registration').send({
       login: 'krolik',
@@ -55,7 +55,7 @@ export const createComment = async (
 
     return {
       accessToken: login.body.accessToken,
-      postId: createResponse.body.id,
+      postId: createPostResponse.body.id,
       userId: me.body.userId,
       commentId: createComment.body.id.toString(),
     };

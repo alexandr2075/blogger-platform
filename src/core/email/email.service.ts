@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { CoreConfig } from '../core.config';
 
 @Injectable()
 export class EmailService {
   private transporter;
 
-  constructor(private configService: ConfigService) {
+  constructor(private coreConfig: CoreConfig) {
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get('SMTP_HOST'),
-      port: this.configService.get('SMTP_PORT'),
+      host: this.coreConfig.smtpHost,
+      port: this.coreConfig.smtpPort,
       secure: false,
       auth: {
-        user: this.configService.get('SMTP_USER'),
-        pass: this.configService.get('SMTP_PASSWORD'),
+        user: this.coreConfig.smtpUser,
+        pass: this.coreConfig.smtpPassword,
       },
     });
   }
@@ -22,12 +22,8 @@ export class EmailService {
     email: string,
     confirmationCode: string,
   ): Promise<void> {
-    // const confirmationLink = `${this.configService.get(
-    //   'API_URL',
-    // )}/auth/registration-confirmation?code=${confirmationCode}`;
-
     await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER') as string,
+      from: this.coreConfig.smtpUser,
       to: email,
       subject: 'Подтверждение регистрации',
       html: `
@@ -42,12 +38,10 @@ export class EmailService {
     email: string,
     recoveryCode: string,
   ): Promise<void> {
-    const recoveryLink = `${this.configService.get(
-      'API_URL',
-    )}/auth/password-recovery?code=${recoveryCode}`;
+    const recoveryLink = `${this.coreConfig.apiUrl}/auth/password-recovery?code=${recoveryCode}`;
 
     await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
+      from: this.coreConfig.smtpUser,
       to: email,
       subject: 'Восстановление пароля',
       html: `

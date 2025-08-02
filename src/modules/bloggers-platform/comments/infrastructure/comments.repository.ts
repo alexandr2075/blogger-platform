@@ -38,10 +38,10 @@ export class CommentsRepository {
     likeStatusDto: LikeStatusDto,
     userId: string,
   ): Promise<void> {
-    const comment = await this.commentModel.findById(commentId);
-    if (!comment) {
-      throw new NotFoundException('Комментарий не найден');
-    }
+    // const comment = await this.commentModel.findById(commentId);
+    // if (!comment) {
+    //   throw new NotFoundException('Комментарий не найден');
+    // }
 
     const updateQuery: any = {};
 

@@ -43,9 +43,9 @@ export class CommentViewDto {
         likesInfo: {
           likesCount: comment.likesCountArray.length,
           dislikesCount: comment.dislikesCountArray.length,
-          myStatus: comment.likesCountArray.includes(comment.userId)
+          myStatus: comment.likesCountArray.includes(userId)
             ? LikeStatus.Like
-            : comment.dislikesCountArray.includes(comment.userId)
+            : comment.dislikesCountArray.includes(userId)
               ? LikeStatus.Dislike
               : LikeStatus.None,
         },

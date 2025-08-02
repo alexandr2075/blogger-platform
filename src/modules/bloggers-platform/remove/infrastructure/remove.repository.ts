@@ -5,6 +5,7 @@ import { User } from '../../../users/domain/user.entity';
 import { Blog } from '../../blogs/domain/blog.entity';
 import { Comment } from '../../comments/domain/comment.entity';
 import { Post } from '../../posts/domain/post.entity';
+import { Device } from '@modules/devices/domain/device.entity';
 
 @Injectable()
 export class RemoveRepository {
@@ -17,15 +18,17 @@ export class RemoveRepository {
     private UserModel: Model<User>,
     @InjectModel(Comment.name)
     private CommentModel: Model<Comment>,
+    @InjectModel(Device.name)
+    private DeviceModel: Model<Device>,
   ) {}
 
   async removeAllData(): Promise<void> {
-    // console.log('ALL DATA DELETED');
     await Promise.all([
       this.BlogModel.deleteMany({}),
       this.PostModel.deleteMany({}),
       this.UserModel.deleteMany({}),
       this.CommentModel.deleteMany({}),
+      this.DeviceModel.deleteMany({}),
     ]);
   }
 }

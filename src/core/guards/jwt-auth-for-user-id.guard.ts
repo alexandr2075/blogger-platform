@@ -5,15 +5,20 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '@nestjs/passport';
+import { CoreConfig } from '@core/core.config';
+import { Request } from 'express';
 
 @Injectable()
 export class JwtAuthGuardForUserId extends AuthGuard('jwt') {
-  constructor(private jwtService: JwtService) {
+  constructor(
+    private jwtService: JwtService,
+    private coreConfig: CoreConfig,
+  ) {
     super();
   }
 
   canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -24,7 +29,7 @@ export class JwtAuthGuardForUserId extends AuthGuard('jwt') {
 
     try {
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET,
+        secret: this.coreConfig.accessTokenSecret,
       });
       request.user = payload;
       return true;

@@ -7,6 +7,7 @@ import { RemoveService } from './application/remove.service';
 import { RemoveRepository } from './infrastructure/remove.repository';
 import { User, UserSchema } from '../../users/domain/user.entity';
 import { Comment, CommentSchema } from '../comments/domain/comment.entity';
+import { Device, DeviceSchema } from '@modules/devices/domain/device.entity';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { Comment, CommentSchema } from '../comments/domain/comment.entity';
       { name: Blog.name, schema: BlogSchema },
       { name: User.name, schema: UserSchema },
       { name: Comment.name, schema: CommentSchema },
+      { name: Device.name, schema: DeviceSchema },
     ]),
   ],
   controllers: [RemoveController],

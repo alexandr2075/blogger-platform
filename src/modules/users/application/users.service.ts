@@ -9,7 +9,6 @@ import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserInputDto } from '../api/input-dto/update-user.input-dto';
 import { User, UserDocument, UserModelType } from '../domain/user.entity';
 import { UsersRepository } from '../infrastructure/users.repository';
-import type { UUID } from 'crypto';
 import type { LoginInputDto } from '../../auth/api/input-dto/login.input-dto';
 
 @Injectable()
@@ -31,7 +30,7 @@ export class UsersService {
       dto.password,
       user.passwordHash,
     );
-    // console.log('isPasswordValid:', isPasswordValid);
+
     if (!isPasswordValid) return null;
 
     return user;

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
+import { HydratedDocument, Model, Types } from 'mongoose';
 import type { UpdateUserInputDto } from '../api/input-dto/update-user.input-dto';
 import { CreateUserDomainDto } from './dto/create-user.domain.dto';
 import {
@@ -8,7 +8,6 @@ import {
   EmailConfirmationSchema,
 } from './email.confirmated.schema';
 import { Name, NameSchema } from './name.schema';
-import type { UUID } from 'crypto';
 
 export const loginConstraints = {
   minLength: 3,
@@ -21,7 +20,7 @@ export const passwordConstraints = {
 };
 
 export const emailConstraints = {
-  match: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
+  match: /^[\w.-]+@([\w-]+\.)+[\w-]{2,}$/i,
 };
 
 //флаг timestemp автоматичеки добавляет поля upatedAt и createdAt
@@ -31,6 +30,7 @@ export const emailConstraints = {
  */
 @Schema({ timestamps: true })
 export class User {
+  _id: Types.ObjectId;
   /**
    * Login of the user (must be uniq)
    * @type {string}
@@ -44,7 +44,7 @@ export class User {
   })
   login: string;
 
-  // @Prop(NameSchema) this variant from docdoesn't make validation for inner object
+  // @Prop(NameSchema) this variant from doc doesn't make validation for inner object
   @Prop({ type: NameSchema })
   name: Name;
 
@@ -93,8 +93,7 @@ export class User {
    * @returns {string} The string representation of the ID
    * если ипсльзуете по всей системе шв айди как string, можете юзать, если id
    */
-  get id() {
-    // @ts-ignore
+  get id(): string {
     return this._id.toString();
   }
 

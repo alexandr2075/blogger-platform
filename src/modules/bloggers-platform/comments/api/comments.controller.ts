@@ -20,12 +20,10 @@ import { JwtAuthGuardForUserId } from '../../../../core/guards/jwt-auth-for-user
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
-  @UseGuards(JwtAuthGuardForUserId)
+
   @Get(':id')
-  async getCommentById(
-    @Param('id') id: string,
-    @CurrentUser() userId?: string,
-  ) {
+  @UseGuards(JwtAuthGuardForUserId)
+  async getCommentById(@Param('id') id: string, @CurrentUser() userId: string) {
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException('invalid comment id');
     }

@@ -11,22 +11,29 @@ import { RemoveModule } from './modules/bloggers-platform/remove/remove.module';
 import { UsersModule } from './modules/users/users.module';
 import { APP_FILTER } from '@nestjs/core';
 import { DomainHttpExceptionsFilter } from './core/exceptions/filters/domain-exceptions.filter';
-import { AllHttpExceptionsFilter } from './core/exceptions/filters/all-exceptions.filter';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AllHttpExceptionsFilter } from '@core/exceptions/filters/all-exceptions.filter';
+import { CoreConfig } from '@core/core.config';
+import { DevicesModule } from '@modules/devices/devices.module';
 
 @Module({
   imports: [
     configModule,
-    MongooseModule.forRoot(
-      process.env.MONGO_URI || 'mongodb://localhost:27017',
-    ),
+    MongooseModule.forRootAsync({
+      imports: [CoreModule],
+      useFactory: (coreConfig: CoreConfig) => {
+        return {
+          uri: coreConfig.mongoURI,
+        };
+      },
+      inject: [CoreConfig],
+    }),
     UsersModule,
     BloggersPlatformModule,
     RemoveModule,
     AuthModule,
     EmailModule,
     CoreModule,
-    NotificationsModule,
+    DevicesModule,
   ],
   controllers: [AppController],
   providers: [

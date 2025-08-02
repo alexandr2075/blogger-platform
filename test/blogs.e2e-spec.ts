@@ -333,6 +333,8 @@ describe('Blogs API (e2e)', () => {
         .send({
           likeStatus: 'Like',
         });
+      expect(responsePostUpdate.status).toBe(204);
+
       const response = await request(httpServer)
         .get(`/blogs/${blogId}/posts`)
         .set('Authorization', `Bearer ${accessToken}`);

@@ -1,13 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { SETTINGS } from './settings';
 import { appSetup } from './setup/app.setup';
+// import { ConfigService } from '@nestjs/config';
+import { CoreConfig } from './core/core.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   appSetup(app);
 
-  await app.listen(SETTINGS.PORT ?? 3000);
-  console.log('Application is running on port 3000');
+  const coreConfig: CoreConfig = app.get<CoreConfig>(CoreConfig);
+  // const configService = app.get(ConfigService);
+  const port: number = coreConfig.port;
+
+  await app.listen(port);
+  console.log(`Application is running on port ${port}`);
 }
 bootstrap();

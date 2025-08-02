@@ -4,10 +4,8 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsUUID,
   Length,
 } from 'class-validator';
-import { UUID } from 'crypto';
 
 export class CreateUserDomainDto {
   @ApiProperty({

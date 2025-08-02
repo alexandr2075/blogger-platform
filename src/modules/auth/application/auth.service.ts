@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as UUID } from 'uuid';
 import { UsersService } from '../../users/application/users.service';
 import { LoginInputDto } from '../api/input-dto/login.input-dto';
 import { NewPasswordInputDto } from '../api/input-dto/new-password.input-dto';
@@ -16,8 +16,14 @@ import { RegistrationInputDto } from '../api/input-dto/registration.input-dto';
 import { MeViewDto } from '../api/view-dto/me.view-dto';
 import { TokensViewDto } from '../api/view-dto/tokens.view-dto';
 import { ConfirmedStatus } from '../../users/domain/email.confirmated.schema';
-import { EmailService } from '../../../core/email/email.service';
+import { EmailService } from '@core/email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { ClientInfoDto } from '@core/dto/client.info.dto';
+import { Device, DeviceModelType } from '@modules/devices/domain/device.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { DevicesService } from '@modules/devices/application/devices.service';
+import { AccessPayload } from '@modules/auth/types/payload.access';
+import { RefreshPayload } from '@modules/auth/types/payload.refresh';
 
 @Injectable()
 export class AuthService {
@@ -26,23 +32,61 @@ export class AuthService {
     private usersService: UsersService,
     private emailService: EmailService,
     private configService: ConfigService,
+    private devicesService: DevicesService,
+    @InjectModel(Device.name) private deviceModel: DeviceModelType,
   ) {}
 
-  async login(dto: LoginInputDto): Promise<TokensViewDto> {
+  async login(
+    dto: LoginInputDto,
+    clientInfo?: ClientInfoDto,
+  ): Promise<TokensViewDto> {
     const user = await this.usersService.validateUser(dto);
 
     if (!user) {
       throw new UnauthorizedException('Неверные учетные данные');
     }
 
-    const payload = { sub: user.id };
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+    // Create a payload for accessToken
+    const payloadAccess = {
+      sub: user.id,
+    };
+
+    // Create an access token
+    const accessToken = this.jwtService.sign(payloadAccess, {
+      secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
+      expiresIn: '10s',
     });
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+    // Create a payload for refreshToken
+    const newDeviceId = UUID();
+    const refreshTokenIat = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
+
+    const payloadRefresh = {
+      userId: user.id,
+      deviceId: newDeviceId,
+      deviceName: clientInfo?.userAgent,
+      ip: clientInfo?.ip,
+      iat: refreshTokenIat,
+    };
+
+    // Create a refresh token
+    const refreshToken = this.jwtService.sign(payloadRefresh, {
+      secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+      expiresIn: '20s',
     });
+
+    // Create device object
+    const device = this.deviceModel.createInstance({
+      userId: user.id,
+      deviceId: newDeviceId,
+      deviceName: clientInfo?.userAgent,
+      ip: clientInfo?.ip,
+    });
+    // Synchronize iat with JWT payload
+    device.iat = new Date(refreshTokenIat * 1000).toISOString();
+
+    // Create a device record in DB
+    await this.deviceModel.create(device);
 
     return {
       accessToken,
@@ -51,17 +95,14 @@ export class AuthService {
   }
 
   async register(dto: RegistrationInputDto): Promise<void> {
-    const confirmationCode = uuidv4();
-    const user = await this.usersService.createUser(dto, confirmationCode);
+    const confirmationCode = UUID();
+    await this.usersService.createUser(dto, confirmationCode);
 
-    await this.emailService.sendRegistrationConfirmation(
-      dto.email,
-      confirmationCode,
-    );
-    // await businessService.sendConfirmationCodeToEmail(
-    //   dto.email,
-    //   confirmationCode,
-    // );
+    this.emailService
+      .sendRegistrationConfirmation(dto.email, confirmationCode)
+      .catch((error) => {
+        console.log('[sendRegistrationConfirmation] Error:', error);
+      });
   }
 
   async confirmRegistration(
@@ -79,7 +120,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) return; // Не сообщаем о существовании пользователя
 
-    const recoveryCode = uuidv4();
+    const recoveryCode = UUID();
     await this.usersService.setRecoveryCode(user._id.toString(), recoveryCode);
     await this.emailService.sendPasswordRecovery(dto.email, recoveryCode);
     // await businessService.sendConfirmationCodeToEmail(dto.email, recoveryCode);
@@ -99,7 +140,7 @@ export class AuthService {
     dto: RegistrationEmailResendingInputDto,
   ): Promise<void> {
     const user = await this.usersService.findByEmail(dto.email);
-    // console.log('AUTH SERVICE RESEND', user)
+
     if (
       !user ||
       user.EmailConfirmed.isConfirmed === ConfirmedStatus.Confirmed
@@ -107,24 +148,144 @@ export class AuthService {
       throw new BadRequestException('email невозможно переотправить');
     }
 
-    const newConfirmationCode = uuidv4();
+    const newConfirmationCode = UUID();
     await this.usersService.updateConfirmationCode(
       user.id,
       newConfirmationCode,
     );
-    await this.emailService.sendRegistrationConfirmation(
-      // await businessService.sendConfirmationCodeToEmail(
-      dto.email,
-      newConfirmationCode,
+
+    this.emailService
+      .sendRegistrationConfirmation(
+        // await businessService.sendConfirmationCodeToEmail(
+        dto.email,
+        newConfirmationCode,
+      )
+      .catch((error) => {
+        console.log('[updateConfirmationCode] Error:', error);
+      });
+  }
+
+  async refreshToken(refreshToken: string): Promise<TokensViewDto> {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
+
+    let payload: RefreshPayload;
+    try {
+      payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+      });
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Refresh token expired');
+      }
+      throw new UnauthorizedException('Invalid refresh token', error);
+    }
+    // get all devicesDocuments by user id
+    const devices = await this.devicesService.getDevicesDocuments(
+      payload.userId,
     );
+
+    // find a device by deviceId and iat
+    const foundDevice = devices.find(
+      (device) =>
+        device.deviceId === payload.deviceId &&
+        Math.floor(new Date(device.iat).getTime() / 1000) === payload.iat,
+    );
+
+    if (!foundDevice) {
+      throw new UnauthorizedException('Device not found');
+    }
+
+    // Create an access token
+    const payloadAccess: AccessPayload = {
+      sub: payload.userId,
+    };
+
+    const accessToken = this.jwtService.sign(payloadAccess, {
+      secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
+      expiresIn: '10s',
+    });
+
+    // wait 700 ms to new iat become different from old iat
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Create a payload for refreshToken
+    const newRefreshTokenIat = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
+
+    const payloadRefresh = {
+      userId: payload.userId,
+      deviceId: payload.deviceId,
+      deviceName: payload.deviceName,
+      ip: payload.ip,
+      iat: newRefreshTokenIat,
+    };
+
+    // Create a refresh token
+    const newRefreshToken = this.jwtService.sign(payloadRefresh, {
+      secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+      expiresIn: '20s',
+    });
+
+    // Update iat device
+    const newLastActiveDate = new Date(newRefreshTokenIat * 1000).toISOString();
+
+    await this.deviceModel.updateOne(
+      { userId: payload.userId, deviceId: payload.deviceId },
+      { $set: { iat: newLastActiveDate } },
+    );
+
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+    };
+  }
+
+  async logout(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
+
+    let payload: RefreshPayload;
+    try {
+      payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+      });
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token', error);
+    }
+
+    const devices = await this.devicesService.getDevicesDocuments(
+      payload.userId,
+    );
+
+    const foundDevice = devices.find(
+      (device) =>
+        device.deviceId === payload.deviceId &&
+        Math.floor(new Date(device.iat).getTime() / 1000) === payload.iat,
+    );
+
+    if (!foundDevice) {
+      throw new UnauthorizedException('Device not found');
+    }
+
+    if (new Date(foundDevice.iat).getTime() / 1000 + 20 < Date.now() / 1000) {
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    await this.deviceModel.deleteOne({
+      userId: payload.userId,
+      deviceId: payload.deviceId,
+    });
   }
 
   async getMe(userId: string): Promise<MeViewDto> {
     const user = await this.usersService.findById(userId);
+
     return {
       email: user.email,
       login: user.login,
-      userId: user.id,
+      userId: user.id as string,
     };
   }
 }

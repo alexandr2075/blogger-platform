@@ -13,7 +13,6 @@ describe('Users API (e2e)', () => {
     const emailServiceMock = {
       sendRegistrationConfirmation: jest.fn(),
     };
-
     const testingModuleBuilder = Test.createTestingModule({
       imports: [AppModule],
     });

@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, HydratedDocument, Model } from 'mongoose';
-import { LikeStatusEnum } from '../dto/like-status.dto';
 import { CommentsInputDto } from '../dto/comments.input-dto';
 
 @Schema({ timestamps: true })

@@ -1,29 +1,42 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-
 import { JwtModule } from '@nestjs/jwt';
-// import { EmailModule } from '../../core/email/email.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './api/auth.controller';
 import { AuthService } from './application/auth.service';
-import { NotificationsModule } from '../../modules/notifications/notifications.module';
-import { EmailModule } from '../../core/email/email.module';
+import { EmailModule } from '@core/email/email.module';
+import { DevicesModule } from '@modules/devices/devices.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Device, DeviceSchema } from '@modules/devices/domain/device.entity';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    MongooseModule.forFeature([{ name: Device.name, schema: DeviceSchema }]),
     EmailModule,
     UsersModule,
-    NotificationsModule,
-    JwtModule.registerAsync({
-      // Используйте registerAsync для асинхронной конфигурации
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION_TIME', '30m'),
+    DevicesModule,
+    // NotificationsModule,
+    JwtModule.register({}),
+    // JwtModule.registerAsync({
+    //   // Используйте registerAsync для асинхронной конфигурации
+    //   imports: [ConfigModule],
+    //   useFactory: (configService: ConfigService) => ({
+    //     secret: configService.get<string>('BEARER_AUTH_JWT_SECRET'),
+    //     signOptions: {
+    //       expiresIn: configService.get<string>(
+    //         'BEARER_AUTH_JWT_EXPIRATION_TIME',
+    //       ),
+    //     },
+    //   }),
+    //   inject: [ConfigService],
+    // }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 10000,
+          limit: 5,
         },
-      }),
-      inject: [ConfigService],
+      ],
     }),
   ],
   controllers: [AuthController],

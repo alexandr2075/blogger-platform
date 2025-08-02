@@ -1,38 +1,38 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { DeviceInputDto } from '@modules/bloggers-platform/devices/dto/device.input-dto';
 import { HydratedDocument, Model } from 'mongoose';
-import { v4 as UUID } from 'uuid';
+import { DeviceInputDto } from '@modules/devices/dto/device.input-dto';
 
-@Schema()
-export class Device extends Document {
-  @Prop({ type: String })
-  user_id;
+@Schema({ timestamps: true })
+export class Device {
+  @Prop({ type: String, required: true })
+  userId: string;
 
-  @Prop({ type: String })
-  device_id;
+  @Prop({ type: String, required: true })
+  deviceId: string;
 
-  @Prop({ type: Date })
-  iat;
-
-  @Prop({ type: String })
-  device_name;
+  @Prop({ type: String, required: true })
+  iat: string;
 
   @Prop({ type: String })
-  ip;
+  deviceName: string;
 
-  @Prop({ type: Date })
-  exp;
+  @Prop({ type: String })
+  ip: string;
+
+  @Prop({ type: String, required: true })
+  exp: string;
+
+  createdAt: Date;
+  updatedAt: Date;
 
   static createInstance(dto: DeviceInputDto): DeviceDocument {
     const device = new this();
-    device.user_id = dto.user_id;
-    device.device_id = UUID();
-    device.iat = new Date();
-    device.exp = new Date(
-      new Date().getTime() + 1000 * 60 * 60 * 24 * 365 * 10,
-    );
-    device.device_name = dto.device_name;
-    device.ip = dto.ip;
+    device.userId = dto.userId;
+    device.deviceId = dto.deviceId;
+    device.iat = new Date().toISOString();
+    device.exp = new Date(Date.now() + 20 * 1000).toISOString();
+    device.deviceName = dto.deviceName || 'not specified';
+    device.ip = dto.ip || 'not specified';
     return device as DeviceDocument;
   }
 }
