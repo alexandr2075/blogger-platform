@@ -1,5 +1,5 @@
-import { UserDocument } from '../../domain/user.entity';
-import { UsersRepository } from '../../infrastructure/users.repository';
+import { User } from '../../domain/user.entity';
+import { UsersRepositoryPostgres } from '../../infrastructure/users.repository-postgres';
 import { CommandHandler } from '@nestjs/cqrs';
 
 export class DeleteUserCommand {
@@ -9,15 +9,15 @@ export class DeleteUserCommand {
 @CommandHandler(DeleteUserCommand)
 export class DeleteUserUseCase {
   constructor(
-    private usersRepository: UsersRepository,
+    private usersRepository: UsersRepositoryPostgres,
   ) {}
 
   async execute(command: DeleteUserCommand) {
-    const user: UserDocument = await this.usersRepository.findOrNotFoundFail(
+    const user: User = await this.usersRepository.findOrNotFoundFail(
       command.id,
     );
     user.makeDeleted();
 
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
   }
 }

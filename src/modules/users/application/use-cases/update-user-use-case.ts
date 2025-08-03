@@ -1,5 +1,5 @@
-import { UserDocument } from '../../domain/user.entity';
-import { UsersRepository } from '../../infrastructure/users.repository';
+import { User } from '../../domain/user.entity';
+import { UsersRepositoryPostgres } from '../../infrastructure/users.repository-postgres';
 import { CommandHandler } from '@nestjs/cqrs';
 import { UpdateUserInputDto } from '../../api/input-dto/update-user.input-dto';
 
@@ -13,18 +13,18 @@ export class UpdateUserCommand {
 @CommandHandler(UpdateUserCommand)
 export class UpdateUserUseCase {
   constructor(
-    private usersRepository: UsersRepository,
+    private usersRepository: UsersRepositoryPostgres,
   ) {}
 
   async execute(command: UpdateUserCommand) {
-    const user: UserDocument = await this.usersRepository.findOrNotFoundFail(
+    const user: User = await this.usersRepository.findOrNotFoundFail(
       command.id,
     );
 
     user.update(command.dto);
 
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
 
-    return user._id.toString();
+    return user.id;
   }
 }

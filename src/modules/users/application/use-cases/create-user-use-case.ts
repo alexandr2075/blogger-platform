@@ -1,9 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import bcrypt from 'bcrypt';
 import { CreateUserDto } from '../../dto/create-user.dto';
-import { User, UserDocument, UserModelType } from '../../domain/user.entity';
-import { UsersRepository } from '../../infrastructure/users.repository';
+import { User } from '../../domain/user.entity';
+import { UsersRepositoryPostgres } from '../../infrastructure/users.repository-postgres';
 import { CommandHandler } from '@nestjs/cqrs';
 
 export class CreateUserCommand {
@@ -16,9 +15,7 @@ export class CreateUserCommand {
 @CommandHandler(CreateUserCommand)
 export class CreateUserUseCase {
   constructor(
-    @InjectModel(User.name)
-    private UserModel: UserModelType,
-    private usersRepository: UsersRepository,
+    private usersRepository: UsersRepositoryPostgres,
   ) {}
 
   async execute(command: CreateUserCommand) {
@@ -37,14 +34,14 @@ export class CreateUserUseCase {
       throw new BadRequestException('email already exists');
     }
     const passwordHash = await bcrypt.hash(command.dto.password, 10);
-    const user: UserDocument = this.UserModel.createInstance({
+    const user: User = User.createInstance({
       login: command.dto.login,
       passwordHash,
       email: command.dto.email,
       confirmationCode: command.confirmationCode,
     });
 
-    await this.usersRepository.save(user);
-    return user;
+    const createdUser = await this.usersRepository.insert(user);
+    return createdUser;
   }
 }

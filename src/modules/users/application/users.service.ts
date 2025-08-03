@@ -3,20 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import bcrypt from 'bcrypt';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserInputDto } from '../api/input-dto/update-user.input-dto';
-import { User, UserDocument, UserModelType } from '../domain/user.entity';
-import { UsersRepository } from '../infrastructure/users.repository';
+import { User } from '../domain/user.entity';
+import { UsersRepositoryPostgres } from '../infrastructure/users.repository-postgres';
 import type { LoginInputDto } from '../../auth/api/input-dto/login.input-dto';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name)
-    private UserModel: UserModelType,
-    private usersRepository: UsersRepository,
+    private usersRepository: UsersRepositoryPostgres,
   ) {}
 
   async validateUser(dto: LoginInputDto): Promise<User | null> {
@@ -48,23 +45,23 @@ export class UsersService {
       throw new BadRequestException('email already exists');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = this.UserModel.createInstance({
+    const user = User.createInstance({
       login: dto.login,
       passwordHash,
       email: dto.email,
       confirmationCode,
     });
     try {
-      await this.usersRepository.save(user);
+      const createdUser = await this.usersRepository.insert(user);
+      return createdUser;
     } catch (e) {
-      if (e.code === 11000) {
+      if (e.code === '23505') { // PostgreSQL unique constraint violation
         throw new BadRequestException(
           'Пользователь с таким логином или email уже существует',
         );
       }
       throw e;
     }
-    return user;
   }
 
   async updateUser(id: string, dto: UpdateUserInputDto): Promise<string> {
@@ -72,25 +69,25 @@ export class UsersService {
 
     user.update(dto);
 
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
 
-    return user._id.toString();
+    return user.id;
   }
 
   async confirmUser(id: string): Promise<string> {
     const user = await this.usersRepository.findOrNotFoundFail(id);
 
     user.confirm();
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
 
-    return user._id.toString();
+    return user.id;
   }
 
   async deleteUser(id: string) {
     const user = await this.usersRepository.findNonDeletedOrNotFoundFail(id);
     user.makeDeleted();
 
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
   }
 
   async findByConfirmationCode(code: string): Promise<User | null> {
@@ -101,10 +98,10 @@ export class UsersService {
     return this.usersRepository.findByEmail(email);
   }
 
-  async findById(id: string): Promise<UserDocument> {
+  async findById(id: string): Promise<User> {
     const user = await this.usersRepository.findById(id);
     if (!user) {
-      throw new NotFoundException('Пользователь не найден');
+      throw new NotFoundException('User not found');
     }
     return user;
   }
@@ -118,7 +115,7 @@ export class UsersService {
   async setRecoveryCode(userId: string, recoveryCode: string): Promise<void> {
     const user = await this.findById(userId);
     user.setConfirmationCode(recoveryCode);
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
   }
 
   async findByRecoveryCode(code: string) {
@@ -128,13 +125,13 @@ export class UsersService {
   async updatePassword(userId: string, newPasswordHash: string): Promise<void> {
     const user = await this.findById(userId);
     user.updatePassword(newPasswordHash);
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
   }
 
   async updateConfirmationCode(userId: string, newCode: string): Promise<void> {
     const user = await this.findById(userId);
     // console.log(user, ' user')
     user.setConfirmationCode(newCode);
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(user);
   }
 }

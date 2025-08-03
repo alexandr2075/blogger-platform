@@ -5,7 +5,7 @@ import { GetPostsQueryParams } from '../api/get-posts-query-params.input-dto';
 import { PostViewDto } from '../api/view-dto/posts.view-dto';
 import { Post, PostModelType } from '../domain/post.entity';
 import { Types } from 'mongoose';
-import { UsersQueryRepository } from '../../../../modules/users/infrastructure/users.query-repository';
+import { UsersQueryRepositoryPostgres } from '../../../../modules/users/infrastructure/users.query-repository-postgres';
 import { SortDirection } from '../../../../core/dto/base.query-params.input-dto';
 
 @Injectable()
@@ -13,7 +13,7 @@ export class PostsQueryRepository {
   constructor(
     @InjectModel(Post.name)
     private PostModel: PostModelType,
-    private usersQueryRepository: UsersQueryRepository,
+    private usersQueryRepository: UsersQueryRepositoryPostgres,
   ) {}
 
   async getByIdOrNotFoundFail(

@@ -15,34 +15,55 @@ import { RegistrationEmailResendingInputDto } from '../api/input-dto/registratio
 import { RegistrationInputDto } from '../api/input-dto/registration.input-dto';
 import { MeViewDto } from '../api/view-dto/me.view-dto';
 import { TokensViewDto } from '../api/view-dto/tokens.view-dto';
-import { ConfirmedStatus } from '../../users/domain/email.confirmated.schema';
+import { ConfirmedStatus } from '../../users/domain/email.confirmation.interface';
 import { EmailService } from '@core/email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { ClientInfoDto } from '@core/dto/client.info.dto';
-import { Device, DeviceModelType } from '@modules/devices/domain/device.entity';
-import { InjectModel } from '@nestjs/mongoose';
+import { Device } from '@modules/devices/domain/device.entity';
+import { DevicesRepositoryPostgres } from '@modules/devices/infrastructure/devices.repository-postgres';
 import { DevicesService } from '@modules/devices/application/devices.service';
 import { AccessPayload } from '@modules/auth/types/payload.access';
 import { RefreshPayload } from '@modules/auth/types/payload.refresh';
+import { UsersRepositoryPostgres } from '@/modules/users/infrastructure/users.repository-postgres';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private usersService: UsersService,
+    private usersRepository: UsersRepositoryPostgres,
     private emailService: EmailService,
     private configService: ConfigService,
     private devicesService: DevicesService,
-    @InjectModel(Device.name) private deviceModel: DeviceModelType,
+    private devicesRepository: DevicesRepositoryPostgres,
   ) {}
 
   async login(
     dto: LoginInputDto,
     clientInfo?: ClientInfoDto,
   ): Promise<TokensViewDto> {
-    const user = await this.usersService.validateUser(dto);
-
+    // Debug logging
+    console.log('Login attempt for:', dto.loginOrEmail);
+    
+    const userByLogin = await this.usersRepository.findByLogin(dto.loginOrEmail);
+    console.log('User found by login:', userByLogin ? 'YES' : 'NO');
+    
+    const userByEmail = await this.usersRepository.findByEmail(dto.loginOrEmail);
+    console.log('User found by email:', userByEmail ? 'YES' : 'NO');
+    
+    const user = userByLogin || userByEmail;
+    console.log('Final user found:', user ? 'YES' : 'NO');
+    
     if (!user) {
+      console.log('No user found, throwing UnauthorizedException');
+      throw new UnauthorizedException('Неверные учетные данные');
+    }
+    
+    const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
+    console.log('Password match:', passwordMatch);
+    
+    if (!passwordMatch) {
+      console.log('Password mismatch, throwing UnauthorizedException');
       throw new UnauthorizedException('Неверные учетные данные');
     }
 
@@ -76,17 +97,15 @@ export class AuthService {
     });
 
     // Create device object
-    const device = this.deviceModel.createInstance({
-      userId: user.id,
-      deviceId: newDeviceId,
-      deviceName: clientInfo?.userAgent,
-      ip: clientInfo?.ip,
-    });
-    // Synchronize iat with JWT payload
-    device.iat = new Date(refreshTokenIat * 1000).toISOString();
+    const device = new Device();
+    device.userId = user.id;
+    device.deviceId = newDeviceId;
+    device.deviceName = clientInfo?.userAgent || 'Unknown';
+    device.ip = clientInfo?.ip || 'Unknown';
+    device.iat = refreshTokenIat;
+    device.exp = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
 
-    // Create a device record in DB
-    await this.deviceModel.create(device);
+    await this.devicesRepository.create(device);
 
     return {
       accessToken,
@@ -109,7 +128,7 @@ export class AuthService {
     dto: RegistrationConfirmationInputDto,
   ): Promise<void> {
     const user = await this.usersService.findByConfirmationCode(dto.code);
-    if (!user || user.EmailConfirmed.confirmationCode !== dto.code) {
+    if (!user || user.emailConfirmation.confirmationCode !== dto.code) {
       throw new BadRequestException('code incorrect');
     }
 
@@ -121,7 +140,7 @@ export class AuthService {
     if (!user) return; // Не сообщаем о существовании пользователя
 
     const recoveryCode = UUID();
-    await this.usersService.setRecoveryCode(user._id.toString(), recoveryCode);
+    await this.usersService.setRecoveryCode(user.id, recoveryCode);
     await this.emailService.sendPasswordRecovery(dto.email, recoveryCode);
     // await businessService.sendConfirmationCodeToEmail(dto.email, recoveryCode);
   }
@@ -143,7 +162,7 @@ export class AuthService {
 
     if (
       !user ||
-      user.EmailConfirmed.isConfirmed === ConfirmedStatus.Confirmed
+      user.emailConfirmation.isConfirmed === ConfirmedStatus.Confirmed
     ) {
       throw new BadRequestException('email невозможно переотправить');
     }
@@ -228,11 +247,10 @@ export class AuthService {
     });
 
     // Update iat device
-    const newLastActiveDate = new Date(newRefreshTokenIat * 1000).toISOString();
-
-    await this.deviceModel.updateOne(
-      { userId: payload.userId, deviceId: payload.deviceId },
-      { $set: { iat: newLastActiveDate } },
+    await this.devicesRepository.updateIat(
+      payload.userId,
+      payload.deviceId,
+      newRefreshTokenIat,
     );
 
     return {
@@ -273,10 +291,10 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token expired');
     }
 
-    await this.deviceModel.deleteOne({
-      userId: payload.userId,
-      deviceId: payload.deviceId,
-    });
+    await this.devicesRepository.deleteByUserIdAndDeviceId(
+      payload.userId,
+      payload.deviceId,
+    );
   }
 
   async getMe(userId: string): Promise<MeViewDto> {

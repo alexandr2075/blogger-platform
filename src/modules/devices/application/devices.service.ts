@@ -5,11 +5,11 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Device, DeviceModelType } from '@modules/devices/domain/device.entity';
+import { Device } from '@modules/devices/domain/device.entity';
 import { DeviceViewModel } from '@modules/devices/dto/device.view-dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { DevicesRepositoryPostgres } from '../infrastructure/devices.repository-postgres';
 import { RefreshPayload } from '@modules/auth/types/payload.refresh';
 
 @Injectable()
@@ -17,18 +17,17 @@ export class DevicesService {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
-    @InjectModel('Device')
-    private readonly deviceModel: DeviceModelType,
+    private readonly devicesRepository: DevicesRepositoryPostgres,
   ) {}
 
   async getDevices(userId: string): Promise<DeviceViewModel[]> {
     try {
-      const devices: Device[] = await this.deviceModel.find({ userId }).lean();
+      const devices: Device[] = await this.devicesRepository.findAllByUserId(userId);
       return devices.map(
         (device: Device): DeviceViewModel => ({
           ip: device.ip,
           title: device.deviceName,
-          lastActiveDate: device.iat,
+          lastActiveDate: new Date(device.iat * 1000).toISOString(),
           deviceId: device.deviceId,
         }),
       );
@@ -39,7 +38,7 @@ export class DevicesService {
 
   async getDevicesDocuments(userId: string) {
     try {
-      const devices: Device[] = await this.deviceModel.find({ userId }).lean();
+      const devices: Device[] = await this.devicesRepository.findAllByUserId(userId);
       return devices;
     } catch (error) {
       throw new Error(error.message);
@@ -48,8 +47,8 @@ export class DevicesService {
 
   async getDeviceDocument(userId: string, deviceId: string) {
     try {
-      const device: Device[] = await this.deviceModel.find({ userId, deviceId }).lean();
-      return device;
+      const device: Device | null = await this.devicesRepository.findByUserIdAndDeviceId(userId, deviceId);
+      return device ? [device] : [];
     } catch (error) {
       throw new Error(error.message);
     }
@@ -65,10 +64,10 @@ export class DevicesService {
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
     });
 
-    await this.deviceModel.deleteMany({
-      userId: payload.userId,
-      deviceId: { $ne: payload.deviceId },
-    });
+    await this.devicesRepository.deleteAllExceptCurrent(
+      payload.userId,
+      payload.deviceId,
+    );
   }
 
   async deleteDevicesByDeviceId(refreshTokenCookie: string, deviceId: string) {
@@ -81,27 +80,23 @@ export class DevicesService {
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
     });
 
-    // Сначала проверяем, существует ли устройство вообще
-    const deviceExists = await this.deviceModel
-      .findOne({ deviceId })
-      .lean();
+    // First check if device exists at all
+    const deviceExists = await this.devicesRepository.findByDeviceId(deviceId);
 
     if (!deviceExists) {
       throw new NotFoundException('Device not found');
     }
 
-    // Затем проверяем, принадлежит ли оно текущему пользователю
-    const userDevice = await this.deviceModel
-      .findOne({ userId: payload.userId, deviceId })
-      .lean();
+    // Then check if it belongs to current user
+    const userDevice = await this.devicesRepository.findByUserIdAndDeviceId(
+      payload.userId,
+      deviceId,
+    );
 
     if (!userDevice) {
       throw new ForbiddenException('Access denied');
     }
 
-    await this.deviceModel.deleteOne({
-      userId: payload.userId,
-      deviceId: deviceId,
-    });
+    await this.devicesRepository.deleteByDeviceId(deviceId);
   }
 }

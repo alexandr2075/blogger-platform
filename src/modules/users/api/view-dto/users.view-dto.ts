@@ -1,4 +1,4 @@
-import type { UserDocument } from '../../domain/user.entity';
+import type { User } from '../../domain/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform } from 'class-transformer';
 import { IsDate, IsEmail, IsString } from 'class-validator';
@@ -40,9 +40,9 @@ export class UserViewDto {
   @Transform(({ value }) => (value instanceof Date ? value : new Date(value)))
   createdAt: Date;
 
-  static mapToView(user: UserDocument): UserViewDto {
+  static mapToView(user: User): UserViewDto {
     const dto = new UserViewDto();
-    dto.id = user._id.toString();
+    dto.id = user.id;
     dto.login = user.login;
     dto.email = user.email;
     dto.createdAt = user.createdAt;

@@ -1,44 +1,24 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
 import { DeviceInputDto } from '@modules/devices/dto/device.input-dto';
 
-@Schema({ timestamps: true })
 export class Device {
-  @Prop({ type: String, required: true })
+  id: string;
   userId: string;
-
-  @Prop({ type: String, required: true })
   deviceId: string;
-
-  @Prop({ type: String, required: true })
-  iat: string;
-
-  @Prop({ type: String })
+  iat: number;
   deviceName: string;
-
-  @Prop({ type: String })
   ip: string;
-
-  @Prop({ type: String, required: true })
-  exp: string;
-
+  exp: number;
   createdAt: Date;
   updatedAt: Date;
 
-  static createInstance(dto: DeviceInputDto): DeviceDocument {
+  static createInstance(dto: DeviceInputDto): Device {
     const device = new this();
     device.userId = dto.userId;
     device.deviceId = dto.deviceId;
-    device.iat = new Date().toISOString();
-    device.exp = new Date(Date.now() + 20 * 1000).toISOString();
+    device.iat = Math.floor(Date.now() / 1000);
+    device.exp = Math.floor(Date.now() / 1000) + 20;
     device.deviceName = dto.deviceName || 'not specified';
     device.ip = dto.ip || 'not specified';
-    return device as DeviceDocument;
+    return device;
   }
 }
-
-export const DeviceSchema = SchemaFactory.createForClass(Device);
-DeviceSchema.loadClass(Device);
-
-export type DeviceDocument = HydratedDocument<Device>;
-export type DeviceModelType = Model<DeviceDocument> & typeof Device;

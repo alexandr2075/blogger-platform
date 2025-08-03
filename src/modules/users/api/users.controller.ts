@@ -14,17 +14,18 @@ import {
 import { CommandBus } from '@nestjs/cqrs';
 import { ApiBasicAuth, ApiParam } from '@nestjs/swagger';
 import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
+import { User } from '../domain/user.entity';
 import { UsersService } from '../application/users.service';
 import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
 import { Public } from '../guards/decorators/public.decorator';
-import { UsersQueryRepository } from '../infrastructure/users.query-repository';
+import { UsersQueryRepositoryPostgres } from '../infrastructure/users.query-repository-postgres';
 import { GetUsersQueryParams } from './get-users-query-params.input-dto';
 import { UpdateUserInputDto } from './input-dto/update-user.input-dto';
 import { CreateUserInputDto } from './input-dto/users.input-dto';
 import { UserViewDto } from './view-dto/users.view-dto';
 import { ObjectIdValidationPipe } from '../../../core/pipes/object-id-validation-transformation-pipe.service';
 import { CreateUserCommand } from '../application/use-cases/create-user-use-case';
-import { UserDocument } from '../domain/user.entity';
+// UserDocument no longer needed for PostgreSQL
 import { UpdateUserCommand } from '../application/use-cases/update-user-use-case';
 import { DeleteUserCommand } from '../application/use-cases/delete-user-use-case';
 
@@ -33,7 +34,7 @@ import { DeleteUserCommand } from '../application/use-cases/delete-user-use-case
 @Controller('users')
 export class UsersController {
   constructor(
-    private usersQueryRepository: UsersQueryRepository,
+    private usersQueryRepository: UsersQueryRepositoryPostgres,
     private usersService: UsersService,
     private commandBus: CommandBus,
   ) {}
@@ -56,10 +57,10 @@ export class UsersController {
 
   @Post()
   async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
-    const user: UserDocument = await this.commandBus.execute(
+    const user: User = await this.commandBus.execute(
       new CreateUserCommand(body),
     );
-    return this.usersQueryRepository.getByIdOrNotFoundFail(user._id.toString());
+    return this.usersQueryRepository.getByIdOrNotFoundFail(user.id);
   }
 
   @ApiParam({ name: 'id', type: 'string' })

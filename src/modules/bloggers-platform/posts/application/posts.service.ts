@@ -13,7 +13,7 @@ import {
   CommentModelType,
 } from '../../comments/domain/comment.entity';
 import { Types } from 'mongoose';
-import { UsersQueryRepository } from '../../../users/infrastructure/users.query-repository';
+import { UsersQueryRepositoryPostgres } from '../../../users/infrastructure/users.query-repository-postgres';
 import { GetPostCommentsQueryParams } from '../api/get-post-comments-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { PostsQueryRepository } from '../infrastructure/posts.query-repository';
@@ -30,7 +30,7 @@ export class PostsService {
     private postsRepository: PostsRepository,
     private postsQueryRepository: PostsQueryRepository,
     private blogsQueryRepository: BlogsQueryRepository,
-    private usersQueryRepository: UsersQueryRepository,
+    private usersQueryRepository: UsersQueryRepositoryPostgres,
     private commentsRepository: CommentsRepository,
   ) {}
 

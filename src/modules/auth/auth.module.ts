@@ -5,31 +5,15 @@ import { AuthController } from './api/auth.controller';
 import { AuthService } from './application/auth.service';
 import { EmailModule } from '@core/email/email.module';
 import { DevicesModule } from '@modules/devices/devices.module';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Device, DeviceSchema } from '@modules/devices/domain/device.entity';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { PostgresService } from '../../core/database/postgres.config';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Device.name, schema: DeviceSchema }]),
     EmailModule,
     UsersModule,
     DevicesModule,
-    // NotificationsModule,
     JwtModule.register({}),
-    // JwtModule.registerAsync({
-    //   // Используйте registerAsync для асинхронной конфигурации
-    //   imports: [ConfigModule],
-    //   useFactory: (configService: ConfigService) => ({
-    //     secret: configService.get<string>('BEARER_AUTH_JWT_SECRET'),
-    //     signOptions: {
-    //       expiresIn: configService.get<string>(
-    //         'BEARER_AUTH_JWT_EXPIRATION_TIME',
-    //       ),
-    //     },
-    //   }),
-    //   inject: [ConfigService],
-    // }),
     ThrottlerModule.forRoot({
       throttlers: [
         {
@@ -40,6 +24,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [PostgresService, AuthService],
 })
 export class AuthModule {}
