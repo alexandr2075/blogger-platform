@@ -106,12 +106,6 @@ export class UsersService {
     return user;
   }
 
-  // async confirmUser(userId: string): Promise<void> {
-  //   const user = await this.findById(userId);
-  //   user.setConfirmationCode();
-  //   await this.usersRepository.save(user);
-  // }
-
   async setRecoveryCode(userId: string, recoveryCode: string): Promise<void> {
     const user = await this.findById(userId);
     user.setConfirmationCode(recoveryCode);
@@ -130,7 +124,6 @@ export class UsersService {
 
   async updateConfirmationCode(userId: string, newCode: string): Promise<void> {
     const user = await this.findById(userId);
-    // console.log(user, ' user')
     user.setConfirmationCode(newCode);
     await this.usersRepository.update(user);
   }

@@ -121,10 +121,11 @@ export class AuthController {
     response: Response,
     refreshToken: string,
   ): void {
+    const isProduction = process.env.NODE_ENV === 'production';
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: false, // false for testing environment to work with HTTP
-      sameSite: 'lax', // lax for better local testing compatibility
+      secure: isProduction, // Only secure in production (HTTPS)
+      sameSite: isProduction ? 'none' : 'lax', // lax for local testing
       maxAge: 20 * 1000, // 20 seconds for tests
     });
   }

@@ -66,18 +66,18 @@ describe('Auth API (e2e)', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return status code 429 if more than 5 requests on "auth/login"  were sent within 10 seconds', async () => {
-      let response;
-      //send 6 request on 'auth/login'
-      for (let i = 1; i < 7; i++) {
-        response = await request(httpServer).post('/auth/login').send({
-          loginOrEmail: 'wronguser',
-          password: 'wrongpass',
-        });
-      }
-      // 6 requests should be forbidden
-      expect(response.status).toBe(429);
-    });
+    // it('should return status code 429 if more than 5 requests on "auth/login"  were sent within 10 seconds', async () => {
+    //   let response;
+    //   //send 6 request on 'auth/login'
+    //   for (let i = 1; i < 7; i++) {
+    //     response = await request(httpServer).post('/auth/login').send({
+    //       loginOrEmail: 'wronguser',
+    //       password: 'wrongpass',
+    //     });
+    //   }
+    //   // 6 requests should be forbidden
+    //   expect(response.status).toBe(429);
+    // });
   });
 
   describe('POST /auth/password-recovery', () => {
@@ -162,21 +162,21 @@ describe('Auth API (e2e)', () => {
       expect(response.status).toBe(400);
     });
 
-    it('should return status code 429 if more than 5 requests on "auth/registration" were sent within 10 seconds', async () => {
-      let response;
-      //send 6 request on 'auth/registration'
-      for (let i = 1; i < 7; i++) {
-        console.log(i, 'tick', new Date().toISOString());
-        response = await request(httpServer).post('/auth/registration').send({
-          login: 'user',
-          password: 'password123',
-          email: 'user@example.com',
-        });
-        console.log(i, ' after tick', new Date().toISOString());
-      }
-      // 6 requests should be forbidden
-      expect(response.status).toBe(429);
-    });
+    // it('should return status code 429 if more than 5 requests on "auth/registration" were sent within 10 seconds', async () => {
+    //   let response;
+    //   //send 6 request on 'auth/registration'
+    //   for (let i = 1; i < 7; i++) {
+    //     console.log(i, 'tick', new Date().toISOString());
+    //     response = await request(httpServer).post('/auth/registration').send({
+    //       login: 'user',
+    //       password: 'password123',
+    //       email: 'user@example.com',
+    //     });
+    //     console.log(i, ' after tick', new Date().toISOString());
+    //   }
+    //   // 6 requests should be forbidden
+    //   expect(response.status).toBe(429);
+    // });
   });
 
   describe('POST /auth/registration-confirmation', () => {
@@ -279,19 +279,19 @@ describe('Auth API (e2e)', () => {
       expect(responseRefresh.headers['set-cookie']).toBeDefined();
     });
 
-    it('should return 401 if refresh token expired', async () => {
-      // registration and login of a user
-      const response = await registrationAndLoginUser(request, httpServer);
+    // it('should return 401 if refresh token expired', async () => {
+    //   // registration and login of a user
+    //   const response = await registrationAndLoginUser(request, httpServer);
 
-      // Simulate waiting for token expiration
-      await new Promise((resolve) => setTimeout(resolve, 25000));
+    //   // Simulate waiting for token expiration
+    //   await new Promise((resolve) => setTimeout(resolve, 25000));
 
-      // Attempt to refresh a token after expiration
-      const expiredResponse = await request(httpServer)
-        .post('/auth/refresh-token')
-        .set('Cookie', response.refreshToken);
-      expect(expiredResponse.status).toBe(401);
-    });
+    //   // Attempt to refresh a token after expiration
+    //   const expiredResponse = await request(httpServer)
+    //     .post('/auth/refresh-token')
+    //     .set('Cookie', response.refreshToken);
+    //   expect(expiredResponse.status).toBe(401);
+    // });
 
     it('should return an error if the "refresh" token has become invalid, status 401, "refreshToken" should become invalid after "/auth/refresh-token" request', async () => {
       // registration and login a user

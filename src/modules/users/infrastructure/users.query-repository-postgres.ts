@@ -58,13 +58,23 @@ export class UsersQueryRepositoryPostgres {
 
     // Определяем сортировку
     const sortDirection = query.sortDirection === 'asc' ? 'ASC' : 'DESC';
-    const sortBy = query.sortBy || 'createdAt';
+    const sortByField = query.sortBy || 'createdAt';
+    
+    // Маппинг camelCase полей в snake_case колонки PostgreSQL
+    const fieldToColumnMap: { [key: string]: string } = {
+      'createdAt': 'created_at',
+      'updatedAt': 'updated_at',
+      'login': 'login',
+      'email': 'email'
+    };
+    
+    const sortBy = fieldToColumnMap[sortByField] || 'created_at';
     
     // Основной запрос с пагинацией
     const itemsQuery = `
       SELECT * FROM users 
       WHERE ${whereClause}
-      ORDER BY ${sortBy} ${sortDirection}
+      ORDER BY ${sortBy === 'login' || sortBy === 'email' ? `LOWER(${sortBy})` : sortBy} ${sortDirection}
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     

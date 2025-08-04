@@ -25,6 +25,7 @@ import { DevicesService } from '@modules/devices/application/devices.service';
 import { AccessPayload } from '@modules/auth/types/payload.access';
 import { RefreshPayload } from '@modules/auth/types/payload.refresh';
 import { UsersRepositoryPostgres } from '@/modules/users/infrastructure/users.repository-postgres';
+import { log } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -42,28 +43,11 @@ export class AuthService {
     dto: LoginInputDto,
     clientInfo?: ClientInfoDto,
   ): Promise<TokensViewDto> {
-    // Debug logging
-    console.log('Login attempt for:', dto.loginOrEmail);
-    
-    const userByLogin = await this.usersRepository.findByLogin(dto.loginOrEmail);
-    console.log('User found by login:', userByLogin ? 'YES' : 'NO');
-    
-    const userByEmail = await this.usersRepository.findByEmail(dto.loginOrEmail);
-    console.log('User found by email:', userByEmail ? 'YES' : 'NO');
-    
-    const user = userByLogin || userByEmail;
-    console.log('Final user found:', user ? 'YES' : 'NO');
-    
-    if (!user) {
-      console.log('No user found, throwing UnauthorizedException');
-      throw new UnauthorizedException('Неверные учетные данные');
-    }
-    
-    const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
-    console.log('Password match:', passwordMatch);
-    
-    if (!passwordMatch) {
-      console.log('Password mismatch, throwing UnauthorizedException');
+    const user =
+      (await this.usersRepository.findByLogin(dto.loginOrEmail)) ||
+      (await this.usersRepository.findByEmail(dto.loginOrEmail));
+
+    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Неверные учетные данные');
     }
 
@@ -75,7 +59,7 @@ export class AuthService {
     // Create an access token
     const accessToken = this.jwtService.sign(payloadAccess, {
       secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
-      expiresIn: '10s',
+      expiresIn: '5min',
     });
 
     // Create a payload for refreshToken
@@ -93,7 +77,7 @@ export class AuthService {
     // Create a refresh token
     const refreshToken = this.jwtService.sign(payloadRefresh, {
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
-      expiresIn: '20s',
+      expiresIn: '30d', // 30 days
     });
 
     // Create device object
@@ -117,11 +101,7 @@ export class AuthService {
     const confirmationCode = UUID();
     await this.usersService.createUser(dto, confirmationCode);
 
-    this.emailService
-      .sendRegistrationConfirmation(dto.email, confirmationCode)
-      .catch((error) => {
-        console.log('[sendRegistrationConfirmation] Error:', error);
-      });
+    this.emailService.sendRegistrationConfirmation(dto.email, confirmationCode);
   }
 
   async confirmRegistration(
@@ -209,11 +189,16 @@ export class AuthService {
     const foundDevice = devices.find(
       (device) =>
         device.deviceId === payload.deviceId &&
-        Math.floor(new Date(device.iat).getTime() / 1000) === payload.iat,
+        Number(device.iat) === payload.iat,
     );
 
     if (!foundDevice) {
       throw new UnauthorizedException('Device not found');
+    }
+
+    // Check if refresh token expired (30 days after device creation)
+    if (Number(foundDevice.iat) + 30 * 24 * 60 * 60 < Date.now() / 1000) {
+      throw new UnauthorizedException('Refresh token expired');
     }
 
     // Create an access token
@@ -243,7 +228,7 @@ export class AuthService {
     // Create a refresh token
     const newRefreshToken = this.jwtService.sign(payloadRefresh, {
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
-      expiresIn: '20s',
+      expiresIn: '30d', // 30 days
     });
 
     // Update iat device
@@ -280,14 +265,14 @@ export class AuthService {
     const foundDevice = devices.find(
       (device) =>
         device.deviceId === payload.deviceId &&
-        Math.floor(new Date(device.iat).getTime() / 1000) === payload.iat,
+        Number(device.iat) === payload.iat,
     );
 
     if (!foundDevice) {
       throw new UnauthorizedException('Device not found');
     }
 
-    if (new Date(foundDevice.iat).getTime() / 1000 + 20 < Date.now() / 1000) {
+    if (Number(foundDevice.iat) + 30 * 24 * 60 * 60 < Date.now() / 1000) {
       throw new UnauthorizedException('Refresh token expired');
     }
 
@@ -303,7 +288,7 @@ export class AuthService {
     return {
       email: user.email,
       login: user.login,
-      userId: user.id as string,
+      userId: user.id,
     };
   }
 }

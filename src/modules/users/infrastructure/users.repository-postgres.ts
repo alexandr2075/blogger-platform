@@ -25,16 +25,9 @@ export class UsersRepositoryPostgres {
         user.name.firstName,
         user.name.lastName,
       ];
-
-      console.log('CreateUser query:', query);
-      console.log('CreateUser values:', values);
       
       try {
         const result = await this.postgresService.query(query, values);
-        console.log('CreateUser result:', result.length > 0 ? 'SUCCESS' : 'FAILED');
-        if (result.length > 0) {
-          console.log('Created user ID:', result[0].id);
-        }
         return this.mapRowToUser(result[0]);
       } catch (error) {
         console.log('CreateUser error:', error);
@@ -45,10 +38,8 @@ export class UsersRepositoryPostgres {
 async findByEmail(email: string): Promise<User | null> {
     const query = `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`;
     const values = [email];
-    console.log('FindByEmail query:', query, 'values:', values);
     try {
         const result = await this.postgresService.query(query, values);
-        console.log('FindByEmail result count:', result.length);
         return result.length > 0 ? this.mapRowToUser(result[0]) : null;
     } catch (error) {
         console.log('FindByEmail error:', error);
@@ -59,10 +50,9 @@ async findByEmail(email: string): Promise<User | null> {
 async findByLogin(login: string): Promise<User | null> {
     const query = `SELECT * FROM users WHERE login = $1 AND deleted_at IS NULL`;
     const values = [login];
-    console.log('FindByLogin query:', query, 'values:', values);
+
     try {
         const result = await this.postgresService.query(query, values);
-        console.log('FindByLogin result count:', result.length);
         return result.length > 0 ? this.mapRowToUser(result[0]) : null;
     } catch (error) {
         console.log('FindByLogin error:', error);
@@ -95,7 +85,6 @@ async deleteAll(): Promise<void> {
 
 // Methods expected by users.service.ts
 async insert(user: User): Promise<User> {
-    console.log('Insert method called for user:', user.login);
     
     const query = `INSERT INTO users (
         login, email, password_hash, confirmation_code, 
@@ -116,7 +105,6 @@ async insert(user: User): Promise<User> {
     
     try {
         const result = await this.postgresService.query(query, values);
-        console.log('User inserted successfully with ID:', result[0].id);
         return this.mapRowToUser(result[0]);
     } catch (error) {
         console.log('Error inserting user:', error);
@@ -125,7 +113,6 @@ async insert(user: User): Promise<User> {
 }
 
 async update(user: User): Promise<void> {
-    console.log('Update method called for user:', user.login, 'ID:', user.id);
     
     const query = `
         UPDATE users 
@@ -148,7 +135,6 @@ async update(user: User): Promise<void> {
     
     try {
         await this.postgresService.query(query, values);
-        console.log('User updated successfully');
     } catch (error) {
         console.log('Error updating user:', error);
         throw error;
