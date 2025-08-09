@@ -1,19 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
-import { SortDirection } from '../../../../core/dto/base.query-params.input-dto';
-import { GetBlogsQueryParams } from '../api/get-blogs-query-params.input-dto';
-import { BlogViewDto } from '../api/view-dto/blogs.view-dto';
-import { PostgresService } from '../../../../core/database/postgres.config';
+import { PostgresService } from '../../../core/database/postgres.config';
+import { GetBlogsQueryParams } from '../../bloggers-platform/blogs/api/get-blogs-query-params.input-dto';
+import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
+import { BlogViewDto } from '../../bloggers-platform/blogs/api/view-dto/blogs.view-dto';
+import { SortDirection } from '../../../core/dto/base.query-params.input-dto';
 
 @Injectable()
-export class BlogsQueryRepositoryPostgres {
+export class AdminBlogsQueryRepository {
   constructor(private readonly postgres: PostgresService) {}
 
   private isUuid(id: string): boolean {
     return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id);
   }
 
-  private mapRowToView(row: any): BlogViewDto {
+  private mapRow(row: any): BlogViewDto {
     return {
       id: row.id,
       name: row.name,
@@ -26,13 +26,12 @@ export class BlogsQueryRepositoryPostgres {
 
   async getByIdOrNotFoundFail(id: string): Promise<BlogViewDto> {
     if (!this.isUuid(id)) throw new NotFoundException('blog not found');
-
     const rows = await this.postgres.query(
       `SELECT * FROM blogs WHERE id = $1 AND deleted_at IS NULL`,
       [id],
     );
     if (rows.length === 0) throw new NotFoundException('blog not found');
-    return this.mapRowToView(rows[0]);
+    return this.mapRow(rows[0]);
   }
 
   async getAll(
@@ -49,18 +48,14 @@ export class BlogsQueryRepositoryPostgres {
       filters.push(`name ILIKE $${values.length}`);
     }
 
+    const sortMap: Record<string, string> = {
+      createdAt: 'created_at',
+      name: 'name',
+      description: 'description',
+      websiteUrl: 'website_url',
+    };
+    const sortBy = sortMap[q.sortBy || 'createdAt'] || 'created_at';
     const sortDir = q.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC';
-    const sortByKey = q.sortBy || 'createdAt';
-    let sortExpression = 'created_at';
-    if (sortByKey === 'name') {
-      sortExpression = 'name COLLATE "C"';
-    } else if (sortByKey === 'description') {
-      sortExpression = 'description';
-    } else if (sortByKey === 'websiteUrl') {
-      sortExpression = 'website_url';
-    } else if (sortByKey === 'createdAt') {
-      sortExpression = 'created_at';
-    }
 
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
@@ -71,7 +66,7 @@ export class BlogsQueryRepositoryPostgres {
     const itemsQuery = `
       SELECT * FROM blogs
       ${where}
-      ORDER BY ${sortExpression} ${sortDir}
+      ORDER BY ${sortBy} ${sortDir}
       OFFSET $${values.length + 1}
       LIMIT $${values.length + 2}
     `;
@@ -85,7 +80,7 @@ export class BlogsQueryRepositoryPostgres {
     const totalCount = countRows[0]?.count ?? 0;
 
     return {
-      items: itemsRows.map((r) => this.mapRowToView(r)),
+      items: itemsRows.map((r) => this.mapRow(r)),
       totalCount,
       pagesCount: Math.ceil(totalCount / pageSize),
       page: pageNumber,

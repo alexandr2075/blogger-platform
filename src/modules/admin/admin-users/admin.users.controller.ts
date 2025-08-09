@@ -1,10 +1,10 @@
 import { Controller, Delete, Get, Param, Post, UseGuards, Query, HttpStatus, HttpCode } from "@nestjs/common";
 import { AdminUsersService } from "./admin.users.service";
-import { BasicAuthGuard } from "../users/guards/basic/basic-auth.guard";
-import { GetUsersQueryParams } from "../users/api/get-users-query-params.input-dto";
-import { PaginatedViewDto } from "@core/dto/base.paginated.view-dto";
-import { UserViewDto } from "../users/api/view-dto/users.view-dto";
-import { CreateUserInputDto } from "../users/api/input-dto/users.input-dto";
+import { BasicAuthGuard } from "../../users/guards/basic/basic-auth.guard";
+import { GetUsersQueryParams } from "../../users/api/get-users-query-params.input-dto";
+import { PaginatedViewDto } from "../../../core/dto/base.paginated.view-dto";
+import { UserViewDto } from "../../users/api/view-dto/users.view-dto";
+import { CreateUserInputDto } from "../../users/api/input-dto/users.input-dto";
 import { Body } from "@nestjs/common";
 
 @UseGuards(BasicAuthGuard)

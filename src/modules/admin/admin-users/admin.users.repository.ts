@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { PostgresService } from "@core/database/postgres.config";
-import { CreateUserInputDto } from "../users/api/input-dto/users.input-dto";
+import { PostgresService } from "../../../core/database/postgres.config";
+import { CreateUserInputDto } from "../../users/api/input-dto/users.input-dto";
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
