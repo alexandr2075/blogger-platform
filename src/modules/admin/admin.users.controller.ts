@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, Post, UseGuards, Query } from "@nestjs/common";
+import { Controller, Delete, Get, Param, Post, UseGuards, Query, HttpStatus, HttpCode } from "@nestjs/common";
 import { AdminUsersService } from "./admin.users.service";
 import { BasicAuthGuard } from "../users/guards/basic/basic-auth.guard";
 import { GetUsersQueryParams } from "../users/api/get-users-query-params.input-dto";
@@ -24,6 +24,7 @@ export class AdminUsersController {
     return this.adminUsersService.addUser(body);
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   async deleteUser(@Param('id') id: string) {
     return this.adminUsersService.deleteUser(id);

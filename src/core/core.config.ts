@@ -50,6 +50,16 @@ export class CoreConfig {
   })
   accessTokenSecret: string;
 
+  @IsString({
+    message: 'Set Env variable REFRESH_TOKEN_EXPIRE, example: 30d',
+  })
+  refreshTokenExpire: string;
+
+  @IsString({
+    message: 'Set Env variable ACCESS_TOKEN_EXPIRE_IN, example: 10m',
+  })
+  accessTokenExpire: string;
+
   @IsString()
   smtpHost: string;
 
@@ -73,6 +83,8 @@ export class CoreConfig {
     this.env = this.configService.get('NODE_ENV');
     this.refreshTokenSecret = this.configService.get('REFRESH_TOKEN_SECRET');
     this.accessTokenSecret = this.configService.get('ACCESS_TOKEN_SECRET');
+    this.refreshTokenExpire = this.configService.get('REFRESH_TOKEN_EXPIRE_IN') || '30d';
+    this.accessTokenExpire = this.configService.get('ACCESS_TOKEN_EXPIRE_IN') || '10m';
     this.smtpPort = Number(this.configService.get('SMTP_PORT'));
     this.smtpUser = this.configService.get('SMTP_USER');
     this.smtpPassword = this.configService.get('SMTP_PASSWORD');

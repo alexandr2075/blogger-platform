@@ -11,7 +11,14 @@ export class UsersQueryRepositoryPostgres {
     private readonly postgresService: PostgresService,
   ) {}
 
+  private isUuid(id: string): boolean {
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id);
+  }
+
   async getByIdOrNotFoundFail(id: string): Promise<UserViewDto> {
+    if (!this.isUuid(id)) {
+      throw new NotFoundException('user not found');
+    }
     const query = `SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`;
     const result = await this.postgresService.query(query, [id]);
 
@@ -74,7 +81,7 @@ export class UsersQueryRepositoryPostgres {
     const itemsQuery = `
       SELECT * FROM users 
       WHERE ${whereClause}
-      ORDER BY ${sortBy === 'login' || sortBy === 'email' ? `LOWER(${sortBy})` : sortBy} ${sortDirection}
+      ORDER BY ${sortBy === 'login' || sortBy === 'email' ? `${sortBy} COLLATE "C"` : sortBy} ${sortDirection}
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     

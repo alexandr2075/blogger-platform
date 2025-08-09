@@ -1,7 +1,12 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: '.env.development' });
+// Load environment based on context: prefer test env when running under Jest
+const envPath =
+  process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID
+    ? '.env.test'
+    : '.env.development';
+require('dotenv').config({ path: envPath });
 
 // PostgreSQL connection settings
 const pool = new Pool({
@@ -15,6 +20,8 @@ const pool = new Pool({
 async function runMigrations() {
   try {
     console.log('🚀 Starting migrations...');
+    const isTest = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+    console.log(`🧪 Environment: ${isTest ? 'test' : 'development'}`);
     
     // Check if tables exist
     const checkUsersResult = await pool.query(`
@@ -33,8 +40,17 @@ async function runMigrations() {
       );
     `);
     
-    const usersExists = checkUsersResult.rows[0].exists;
-    const devicesExists = checkDevicesResult.rows[0].exists;
+    let usersExists = checkUsersResult.rows[0].exists;
+    let devicesExists = checkDevicesResult.rows[0].exists;
+    
+    // In test env, force a clean schema to avoid drifting columns (e.g., missing id)
+    if (isTest) {
+      console.log('🧹 Test mode: dropping tables if they exist to ensure clean schema');
+      await pool.query(`DROP TABLE IF EXISTS devices CASCADE;`);
+      await pool.query(`DROP TABLE IF EXISTS users CASCADE;`);
+      usersExists = false;
+      devicesExists = false;
+    }
     
     // List of migrations to execute
     const migrations = [];
@@ -53,7 +69,7 @@ async function runMigrations() {
     
     if (migrations.length === 0) {
       console.log('✨ All tables already exist, no migrations required!');
-      return;
+      return true;
     }
     
     for (const migrationFile of migrations) {
@@ -69,14 +85,19 @@ async function runMigrations() {
     
     console.log('🎉 All migrations completed successfully!');
     console.log('📋 Created/updated tables: users, devices with indexes and triggers');
-    
+    return true;
   } catch (error) {
     console.error('❌ Migration execution error:', error.message);
-    process.exit(1);
+    throw error;
   } finally {
     await pool.end();
   }
 }
 
-// Run migrations
-runMigrations();
+// Export for programmatic use (e.g., from tests)
+module.exports = { runMigrations };
+
+// Allow running as a script: `node scripts/run-migrations.js`
+if (require.main === module) {
+  runMigrations().catch(() => process.exit(1));
+}

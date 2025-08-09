@@ -8,6 +8,10 @@ export class UsersRepositoryPostgres {
         private readonly postgresService: PostgresService,
     ) {}
 
+    private isUuid(id: string): boolean {
+      return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id);
+    }
+
     async createUser(user: User): Promise<User> {
       const query = `INSERT INTO users (
       login, email, password_hash, confirmation_code, 
@@ -61,6 +65,7 @@ async findByLogin(login: string): Promise<User | null> {
 }
 
 async findById(id: string): Promise<User | null> {
+    if (!this.isUuid(id)) return null;
     const query = `SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`;
     const values = [id];
     const result = await this.postgresService.query(query, values);
@@ -74,8 +79,17 @@ async findAll(): Promise<User[]> {
 }
 
 async delete(id: string): Promise<void> {
-    const query = `DELETE FROM users WHERE id = $1`;
-    await this.postgresService.query(query, [id]);
+    const query = `
+        UPDATE users 
+        SET deleted_at = NOW() 
+        WHERE id = $1 AND deleted_at IS NULL 
+        RETURNING id
+    `;
+    const result = await this.postgresService.query(query, [id]);
+    
+    if (result.length === 0) {
+        throw new NotFoundException(`User with id ${id} not found or already deleted`);
+    }
 }
 
 async deleteAll(): Promise<void> {
@@ -118,8 +132,9 @@ async update(user: User): Promise<void> {
         UPDATE users 
         SET email = $1, password_hash = $2, confirmation_code = $3, 
             confirmation_code_expiration_date = $4, is_confirmed = $5,
-            name_first_name = $6, name_last_name = $7, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $8
+            name_first_name = $6, name_last_name = $7, deleted_at = $8,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $9
     `;
     
     const values = [
@@ -130,6 +145,7 @@ async update(user: User): Promise<void> {
         user.emailConfirmation.isConfirmed,
         user.name.firstName,
         user.name.lastName,
+        user.deletedAt,
         user.id
     ];
     

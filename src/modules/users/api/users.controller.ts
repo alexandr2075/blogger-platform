@@ -23,7 +23,6 @@ import { GetUsersQueryParams } from './get-users-query-params.input-dto';
 import { UpdateUserInputDto } from './input-dto/update-user.input-dto';
 import { CreateUserInputDto } from './input-dto/users.input-dto';
 import { UserViewDto } from './view-dto/users.view-dto';
-import { ObjectIdValidationPipe } from '../../../core/pipes/object-id-validation-transformation-pipe.service';
 import { CreateUserCommand } from '../application/use-cases/create-user-use-case';
 // UserDocument no longer needed for PostgreSQL
 import { UpdateUserCommand } from '../application/use-cases/update-user-use-case';
@@ -50,7 +49,7 @@ export class UsersController {
   @ApiParam({ name: 'id' }) //для сваггера
   @Get(':id')
   async getById(
-    @Param('id', ObjectIdValidationPipe) id: string,
+    @Param('id') id: string,
   ): Promise<UserViewDto> {
     return this.usersQueryRepository.getByIdOrNotFoundFail(id);
   }

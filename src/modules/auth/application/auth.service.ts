@@ -18,6 +18,7 @@ import { TokensViewDto } from '../api/view-dto/tokens.view-dto';
 import { ConfirmedStatus } from '../../users/domain/email.confirmation.interface';
 import { EmailService } from '@core/email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { CoreConfig } from '@core/core.config';
 import { ClientInfoDto } from '@core/dto/client.info.dto';
 import { Device } from '@modules/devices/domain/device.entity';
 import { DevicesRepositoryPostgres } from '@modules/devices/infrastructure/devices.repository-postgres';
@@ -25,7 +26,6 @@ import { DevicesService } from '@modules/devices/application/devices.service';
 import { AccessPayload } from '@modules/auth/types/payload.access';
 import { RefreshPayload } from '@modules/auth/types/payload.refresh';
 import { UsersRepositoryPostgres } from '@/modules/users/infrastructure/users.repository-postgres';
-import { log } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +35,7 @@ export class AuthService {
     private usersRepository: UsersRepositoryPostgres,
     private emailService: EmailService,
     private configService: ConfigService,
+    private coreConfig: CoreConfig,
     private devicesService: DevicesService,
     private devicesRepository: DevicesRepositoryPostgres,
   ) {}
@@ -59,7 +60,7 @@ export class AuthService {
     // Create an access token
     const accessToken = this.jwtService.sign(payloadAccess, {
       secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
-      expiresIn: '5min',
+      expiresIn: this.coreConfig.accessTokenExpire,
     });
 
     // Create a payload for refreshToken
@@ -77,7 +78,7 @@ export class AuthService {
     // Create a refresh token
     const refreshToken = this.jwtService.sign(payloadRefresh, {
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
-      expiresIn: '30d', // 30 days
+      expiresIn: this.coreConfig.refreshTokenExpire,
     });
 
     // Create device object
@@ -87,7 +88,7 @@ export class AuthService {
     device.deviceName = clientInfo?.userAgent || 'Unknown';
     device.ip = clientInfo?.ip || 'Unknown';
     device.iat = refreshTokenIat;
-    device.exp = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
+    device.exp = refreshTokenIat + this.parseTokenExpiration(this.coreConfig.refreshTokenExpire);
 
     await this.devicesRepository.create(device);
 
@@ -95,6 +96,25 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  private parseTokenExpiration(expiration: string): number {
+    const match = expiration.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      throw new Error(`Invalid token expiration format: ${expiration}`);
+    }
+
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+
+    switch (unit) {
+      case 's': return value; // seconds
+      case 'm': return value * 60; // minutes to seconds
+      case 'h': return value * 60 * 60; // hours to seconds
+      case 'd': return value * 24 * 60 * 60; // days to seconds
+      default:
+        throw new Error(`Unsupported time unit: ${unit}`);
+    }
   }
 
   async register(dto: RegistrationInputDto): Promise<void> {
@@ -154,11 +174,7 @@ export class AuthService {
     );
 
     this.emailService
-      .sendRegistrationConfirmation(
-        // await businessService.sendConfirmationCodeToEmail(
-        dto.email,
-        newConfirmationCode,
-      )
+      .sendRegistrationConfirmation(dto.email, newConfirmationCode)
       .catch((error) => {
         console.log('[updateConfirmationCode] Error:', error);
       });
@@ -196,8 +212,8 @@ export class AuthService {
       throw new UnauthorizedException('Device not found');
     }
 
-    // Check if refresh token expired (30 days after device creation)
-    if (Number(foundDevice.iat) + 30 * 24 * 60 * 60 < Date.now() / 1000) {
+    // Check if refresh token expired (20 seconds after device creation)
+    if (Number(foundDevice.exp) < Date.now() / 1000) {
       throw new UnauthorizedException('Refresh token expired');
     }
 
@@ -208,7 +224,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payloadAccess, {
       secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
-      expiresIn: '10s',
+      expiresIn: this.coreConfig.accessTokenExpire,
     });
 
     // wait 700 ms to new iat become different from old iat
@@ -228,7 +244,7 @@ export class AuthService {
     // Create a refresh token
     const newRefreshToken = this.jwtService.sign(payloadRefresh, {
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
-      expiresIn: '30d', // 30 days
+      expiresIn: this.coreConfig.refreshTokenExpire,
     });
 
     // Update iat device
@@ -255,7 +271,7 @@ export class AuthService {
         secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
       });
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token', error);
+      throw new UnauthorizedException('Invalid refresh token111', error);
     }
 
     const devices = await this.devicesService.getDevicesDocuments(
@@ -272,7 +288,7 @@ export class AuthService {
       throw new UnauthorizedException('Device not found');
     }
 
-    if (Number(foundDevice.iat) + 30 * 24 * 60 * 60 < Date.now() / 1000) {
+    if (Number(foundDevice.exp) < Date.now() / 1000) {
       throw new UnauthorizedException('Refresh token expired');
     }
 

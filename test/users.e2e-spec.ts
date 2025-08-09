@@ -4,12 +4,17 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/setup/app.setup';
 import { EmailService } from '../src/core/email/email.service';
+// Ensure DB schema is present before tests
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { runMigrations } = require('../scripts/run-migrations');
 
 describe('Users API (e2e)', () => {
   let app: INestApplication;
   let httpServer: any;
 
   beforeAll(async () => {
+    // Create required tables if missing (users, devices)
+    await runMigrations();
     const emailServiceMock = {
       sendRegistrationConfirmation: jest.fn(),
     };

@@ -13,7 +13,9 @@ import {
 import { Request } from 'express';
 import { Response } from 'express';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator';
+import { RefreshToken } from '@core/decorators/refresh-token.decorator';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
+import { RefreshTokenGuard } from '@core/guards/refresh-token.guard';
 import { AuthService } from '../application/auth.service';
 import { LoginInputDto } from './input-dto/login.input-dto';
 import { NewPasswordInputDto } from './input-dto/new-password.input-dto';
@@ -28,7 +30,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CookieUtil } from '@core/utils/cookie.util';
 
 @Controller('auth')
-// @UseGuards(ThrottlerGuard) // Temporarily disabled for e2e testing
+@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -79,17 +81,16 @@ export class AuthController {
   async registrationEmailResending(
     @Body() dto: RegistrationEmailResendingInputDto,
   ): Promise<void> {
-    // console.log('resending')
     await this.authService.resendRegistrationEmail(dto);
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('refresh-token')
+  @UseGuards(RefreshTokenGuard)
   async refreshToken(
-    @Req() request: Request,
+    @RefreshToken() refreshToken: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const refreshToken = this.extractRefreshToken(request);
     const tokens = await this.authService.refreshToken(refreshToken);
 
     this.setRefreshTokenCookie(response, tokens.refreshToken);
@@ -98,8 +99,12 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(@Req() request: Request) {
-    const refreshToken = this.extractRefreshToken(request);
+  @UseGuards(RefreshTokenGuard)
+  async logout(@RefreshToken() refreshToken: string) {
+    console.log('[LOGOUT] Using RefreshTokenGuard - token received:', {
+      refreshToken: refreshToken ? 'present' : 'missing',
+      tokenLength: refreshToken?.length || 0
+    });
     await this.authService.logout(refreshToken);
   }
 
@@ -121,12 +126,13 @@ export class AuthController {
     response: Response,
     refreshToken: string,
   ): void {
-    const isProduction = process.env.NODE_ENV === 'production';
-    response.cookie('refreshToken', refreshToken, {
+    const cookieOptions = {
       httpOnly: true,
-      secure: isProduction, // Only secure in production (HTTPS)
-      sameSite: isProduction ? 'none' : 'lax', // lax for local testing
-      maxAge: 20 * 1000, // 20 seconds for tests
-    });
+      secure: true,
+      // sameSite: 'None',
+      maxAge: 20 * 1000, // 20 seconds
+    };
+
+    response.cookie('refreshToken', refreshToken, cookieOptions);
   }
 }

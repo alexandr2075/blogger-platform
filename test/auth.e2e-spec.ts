@@ -41,18 +41,27 @@ describe('Auth API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
-  });
+    // Close all connections and cleanup
+    if (app) {
+      await app.close();
+    }
+    // Give time for all async operations to complete
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }, 60000); // Increase timeout to 60 seconds
 
   beforeEach(async () => {
+    // Clear all test data including users, devices, and sessions
     await request(httpServer).delete('/testing/all-data');
+
+    // Give time for database cleanup to complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   describe('POST /auth/login', () => {
     it('should login user successfully', async () => {
-      // registration and login a user
+      // registration and login of a user
       const response = await registrationAndLoginUser(request, httpServer);
-
+      console.log('Login response:', response);
       expect(response.accessToken).toBeDefined();
       expect(response.refreshToken).toBeDefined();
     });
@@ -181,11 +190,17 @@ describe('Auth API (e2e)', () => {
 
   describe('POST /auth/registration-confirmation', () => {
     it('should confirm registration', async () => {
-      await request(httpServer).post('/auth/registration').send({
-        login: 'testuser',
-        password: 'password123',
-        email: 'test@example.com',
-      });
+      // Generate unique test data to prevent conflicts
+      const randomId = Math.floor(Math.random() * 999) + 100; // 3-digit number
+      const uniqueId = randomId.toString();
+
+      await request(httpServer)
+        .post('/auth/registration')
+        .send({
+          login: `test${uniqueId}`, // test100-test999 (7 chars, within 3-10 limit)
+          password: 'password123',
+          email: `test${uniqueId}@example.com`,
+        });
 
       const response = await request(httpServer)
         .post('/auth/registration-confirmation')
@@ -209,17 +224,24 @@ describe('Auth API (e2e)', () => {
 
   describe('POST /auth/registration-email-resending', () => {
     it('should resend confirmation email', async () => {
+      // Generate unique test data to prevent conflicts
+      const randomId = Math.floor(Math.random() * 999) + 100; // 3-digit number
+      const uniqueId = randomId.toString();
+      const uniqueEmail = `resend${uniqueId}@example.com`;
+
       // First register a user
-      await request(httpServer).post('/auth/registration').send({
-        login: 'resenduser',
-        password: 'password123',
-        email: 'resend@example.com',
-      });
+      await request(httpServer)
+        .post('/auth/registration')
+        .send({
+          login: `resend${uniqueId}`, // resend100-resend999 (9 chars, within 3-10 limit)
+          password: 'password123',
+          email: uniqueEmail,
+        });
 
       const response = await request(httpServer)
         .post('/auth/registration-email-resending')
         .send({
-          email: 'resend@example.com',
+          email: uniqueEmail,
         });
 
       expect(response.status).toBe(204);
@@ -238,14 +260,20 @@ describe('Auth API (e2e)', () => {
 
   describe('GET /auth/me', () => {
     it('should return current user info', async () => {
+      // Generate unique test data to prevent conflicts
+      const randomId = Math.floor(Math.random() * 999) + 100; // 3-digit number
+      const uniqueId = randomId.toString();
+      const uniqueLogin = `user${uniqueId}`; // user100-user999 (7 chars, within 3-10 limit)
+      const uniqueEmail = `current${uniqueId}@example.com`;
+
       // First create and login user
       await request(httpServer).post('/auth/registration').send({
-        login: 'user',
+        login: uniqueLogin,
         password: 'password123',
-        email: 'current@example.com',
+        email: uniqueEmail,
       });
       const loginResponse = await request(httpServer).post('/auth/login').send({
-        loginOrEmail: 'user',
+        loginOrEmail: uniqueLogin,
         password: 'password123',
       });
 
@@ -253,8 +281,8 @@ describe('Auth API (e2e)', () => {
         .get('/auth/me')
         .set('Authorization', `Bearer ${loginResponse.body.accessToken}`);
       expect(response.status).toBe(200);
-      expect(response.body.login).toBe('user');
-      expect(response.body.email).toBe('current@example.com');
+      expect(response.body.login).toBe(uniqueLogin);
+      expect(response.body.email).toBe(uniqueEmail);
     });
 
     it('should return 401 without authorization', async () => {
