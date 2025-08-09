@@ -6,7 +6,7 @@ import { AppService } from './app.service';
 import { CoreModule } from './core/core.module';
 import { EmailModule } from './core/email/email.module';
 import { AuthModule } from './modules/auth/auth.module';
-// import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
+import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
 import { RemoveModule } from './modules/bloggers-platform/remove/remove.module';
 import { UsersModule } from './modules/users/users.module';
 import { APP_FILTER } from '@nestjs/core';
@@ -21,7 +21,7 @@ import { AdminModule } from './modules/admin/admin.module';
     configModule,
     UsersModule,
     AdminModule,
-    // BloggersPlatformModule,
+    BloggersPlatformModule,
     RemoveModule,
     AuthModule,
     EmailModule,

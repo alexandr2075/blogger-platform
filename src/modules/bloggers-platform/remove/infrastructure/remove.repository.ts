@@ -6,6 +6,7 @@ import { Injectable } from '@nestjs/common';
 // import { Post } from '../../posts/domain/post.entity';
 import { UsersRepositoryPostgres } from '../../../users/infrastructure/users.repository-postgres';
 import { DevicesRepositoryPostgres } from '../../../devices/infrastructure/devices.repository-postgres';
+import { PostgresService } from '../../../../core/database/postgres.config';
 
 @Injectable()
 export class RemoveRepository {
@@ -18,14 +19,15 @@ export class RemoveRepository {
     // private CommentModel: Model<Comment>,
     private usersRepository: UsersRepositoryPostgres,
     private devicesRepository: DevicesRepositoryPostgres,
+    private postgres: PostgresService,
   ) {}
 
   async removeAllData(): Promise<void> {
+    // Clear relational data in correct order due to FK constraints
+    await this.postgres.query('DELETE FROM post_likes', []);
+    await this.postgres.query('DELETE FROM posts', []);
+    await this.postgres.query('DELETE FROM blogs', []);
     await Promise.all([
-      // this.BlogModel.deleteMany({}),
-      // this.PostModel.deleteMany({}),
-      // this.CommentModel.deleteMany({}),
-      // PostgreSQL repositories don't have deleteMany, so we'll implement custom methods
       this.usersRepository.deleteAll(),
       this.devicesRepository.deleteAll(),
     ]);
