@@ -48,14 +48,18 @@ export class AdminBlogsQueryRepository {
       filters.push(`name ILIKE $${values.length}`);
     }
 
-    const sortMap: Record<string, string> = {
-      createdAt: 'created_at',
-      name: 'name',
-      description: 'description',
-      websiteUrl: 'website_url',
-    };
-    const sortBy = sortMap[q.sortBy || 'createdAt'] || 'created_at';
     const sortDir = q.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC';
+    const sortByKey = q.sortBy || 'createdAt';
+    let sortExpression = 'created_at';
+    if (sortByKey === 'name') {
+      sortExpression = 'name COLLATE "C"';
+    } else if (sortByKey === 'description') {
+      sortExpression = 'description';
+    } else if (sortByKey === 'websiteUrl') {
+      sortExpression = 'website_url';
+    } else if (sortByKey === 'createdAt') {
+      sortExpression = 'created_at';
+    }
 
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
@@ -66,7 +70,7 @@ export class AdminBlogsQueryRepository {
     const itemsQuery = `
       SELECT * FROM blogs
       ${where}
-      ORDER BY ${sortBy} ${sortDir}
+      ORDER BY ${sortExpression} ${sortDir}
       OFFSET $${values.length + 1}
       LIMIT $${values.length + 2}
     `;

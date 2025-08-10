@@ -11,6 +11,8 @@ import { GetPostCommentsQueryParams } from '../api/get-post-comments-query-param
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { CommentViewDto } from '../../comments/dto/comments.view-dto';
 import { CreateCommentDto } from '../dto/create-comment.dto';
+import { CommentsRepositoryPostgres } from '../../comments/infrastructure/comments.repository-postgres';
+import { CommentsQueryRepositoryPostgres } from '../../comments/infrastructure/comments.query-repository-postgres';
 
 @Injectable()
 export class PostsService {
@@ -19,6 +21,8 @@ export class PostsService {
     private postsQueryRepository: PostsQueryRepositoryPostgres,
     private blogsQueryRepository: BlogsQueryRepositoryPostgres,
     private usersQueryRepository: UsersQueryRepositoryPostgres,
+    private commentsRepository: CommentsRepositoryPostgres,
+    private commentsQueryRepository: CommentsQueryRepositoryPostgres,
   ) {}
 
   async createPost(dto: CreatePostInputDto): Promise<PostViewDto> {
@@ -68,7 +72,9 @@ export class PostsService {
     postId: string,
     query: GetPostCommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
-    throw new NotFoundException('Comments are not available');
+    // Ensure post exists
+    await this.postsRepository.findOrNotFoundFail(postId);
+    return this.commentsQueryRepository.getAllByPostId(postId, query);
   }
 
   async createComment(
@@ -76,6 +82,19 @@ export class PostsService {
     userId: string,
     dto: CreateCommentDto,
   ): Promise<CommentViewDto> {
-    throw new NotFoundException('Comments are not available');
+    // Ensure post exists
+    await this.postsRepository.findOrNotFoundFail(postId);
+    
+    // Get user login
+    const user = await this.usersQueryRepository.getByIdOrNotFoundFail(userId);
+    
+    const commentId = await this.commentsRepository.insert({
+      content: dto.content,
+      userId,
+      userLogin: user.login,
+      postId,
+    });
+    
+    return this.commentsQueryRepository.getByIdOrNotFoundFail(commentId, userId);
   }
 }

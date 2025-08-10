@@ -12,22 +12,18 @@ import {
 import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
 import { LikeStatusDto } from '../dto/like-status.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
-import { CommentsService } from '../application/comments.service';
+import { CommentsServicePostgres } from '../application/comments.service-postgres';
 import { CurrentUser } from '../../../../core/decorators/current-user.decorator';
-import { Types } from 'mongoose';
 import { JwtAuthGuardForUserId } from '../../../../core/guards/jwt-auth-for-user-id.guard';
 
 @Controller('comments')
 export class CommentsController {
-  constructor(private readonly commentsService: CommentsService) {}
+  constructor(private readonly commentsService: CommentsServicePostgres) {}
 
   @Get(':id')
   @UseGuards(JwtAuthGuardForUserId)
   async getCommentById(@Param('id') id: string, @CurrentUser() userId: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('invalid comment id');
-    }
-    return this.commentsService.findCommentById(new Types.ObjectId(id), userId);
+    return this.commentsService.findCommentById(id, userId);
   }
 
   @Put(':commentId')

@@ -61,16 +61,34 @@ async function runMigrations() {
         AND table_name = 'post_likes'
       );
     `);
+    const checkCommentsResult = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'comments'
+      );
+    `);
+    const checkCommentLikesResult = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'comment_likes'
+      );
+    `);
     
     let usersExists = checkUsersResult.rows[0].exists;
     let devicesExists = checkDevicesResult.rows[0].exists;
     let blogsExists = checkBlogsResult.rows[0].exists;
     let postsExists = checkPostsResult.rows[0].exists;
     let postLikesExists = checkPostLikesResult.rows[0].exists;
+    let commentsExists = checkCommentsResult.rows[0].exists;
+    let commentLikesExists = checkCommentLikesResult.rows[0].exists;
     
     // In test env, force a clean schema to avoid drifting columns (e.g., missing id)
     if (isTest) {
       console.log('🧹 Test mode: dropping tables if they exist to ensure clean schema');
+      await pool.query(`DROP TABLE IF EXISTS comment_likes CASCADE;`);
+      await pool.query(`DROP TABLE IF EXISTS comments CASCADE;`);
       await pool.query(`DROP TABLE IF EXISTS post_likes CASCADE;`);
       await pool.query(`DROP TABLE IF EXISTS posts CASCADE;`);
       await pool.query(`DROP TABLE IF EXISTS blogs CASCADE;`);
@@ -81,6 +99,8 @@ async function runMigrations() {
       blogsExists = false;
       postsExists = false;
       postLikesExists = false;
+      commentsExists = false;
+      commentLikesExists = false;
     }
     
     // List of migrations to execute
@@ -108,6 +128,12 @@ async function runMigrations() {
       migrations.push('004_create_posts_and_likes.sql');
     } else {
       console.log('ℹ️  Posts and post_likes tables already exist, skipping migration');
+    }
+
+    if (!commentsExists || !commentLikesExists) {
+      migrations.push('005_create_comments_and_likes.sql');
+    } else {
+      console.log('ℹ️  Comments and comment_likes tables already exist, skipping migration');
     }
 
     if (migrations.length === 0) {
