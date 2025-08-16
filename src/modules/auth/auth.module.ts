@@ -14,14 +14,14 @@ import { PostgresService } from '../../core/database/postgres.config';
     UsersModule,
     DevicesModule,
     JwtModule.register({}),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 10000,
-          limit: 5,
-        },
-      ],
-    }),
+    // ThrottlerModule.forRoot({
+    //   throttlers: [
+    //     {
+    //       ttl: 10000,
+    //       limit: 5,
+    //     },
+    //   ],
+    // }),
   ],
   controllers: [AuthController],
   providers: [PostgresService, AuthService],

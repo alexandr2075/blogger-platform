@@ -30,7 +30,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CookieUtil } from '@core/utils/cookie.util';
 
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
+// @UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private authService: AuthService) {}
 

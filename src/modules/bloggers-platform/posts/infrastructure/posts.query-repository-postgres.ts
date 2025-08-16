@@ -15,6 +15,20 @@ export class PostsQueryRepositoryPostgres {
 
   private mapRow(row: any, userId?: string): PostViewDto {
     const myStatus = row.my_status ?? 'None';
+    let newestLikes: any[] = [];
+    
+    // Parse newest likes if they exist
+    if (row.newest_likes && row.newest_likes !== null) {
+      try {
+        const parsed = typeof row.newest_likes === 'string' 
+          ? JSON.parse(row.newest_likes) 
+          : row.newest_likes;
+        newestLikes = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        newestLikes = [];
+      }
+    }
+    
     return {
       id: row.id,
       title: row.title,
@@ -27,7 +41,7 @@ export class PostsQueryRepositoryPostgres {
         likesCount: Number(row.likes_count) || 0,
         dislikesCount: Number(row.dislikes_count) || 0,
         myStatus: myStatus,
-        newestLikes: [],
+        newestLikes: newestLikes,
       },
     } as any;
   }
@@ -44,7 +58,21 @@ export class PostsQueryRepositoryPostgres {
                 (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.status = 'Dislike') AS dislikes_count,
                 ${myUser ? `(
                   SELECT status FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = $2
-                )` : `'None'`} AS my_status
+                )` : `'None'`} AS my_status,
+                (SELECT JSON_AGG(
+                  JSON_BUILD_OBJECT(
+                    'addedAt', likes_data.added_at,
+                    'userId', likes_data.user_id,
+                    'login', likes_data.login
+                  ) ORDER BY likes_data.added_at DESC
+                ) FROM (
+                  SELECT pl.added_at, pl.user_id, u.login 
+                  FROM post_likes pl 
+                  JOIN users u ON u.id = pl.user_id 
+                  WHERE pl.post_id = p.id AND pl.status = 'Like' 
+                  ORDER BY pl.added_at DESC 
+                  LIMIT 3
+                ) likes_data) AS newest_likes
          FROM posts p
          WHERE p.id = $1 AND p.deleted_at IS NULL`,
         myUser ? [id, myUser] : [id],
@@ -94,7 +122,21 @@ export class PostsQueryRepositoryPostgres {
              (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.status = 'Dislike') AS dislikes_count,
              ${myUser ? `(
                SELECT status FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = $${values.length + 3}
-             )` : `'None'`} AS my_status
+             )` : `'None'`} AS my_status,
+             (SELECT JSON_AGG(
+               JSON_BUILD_OBJECT(
+                 'addedAt', likes_data.added_at,
+                 'userId', likes_data.user_id,
+                 'login', likes_data.login
+               ) ORDER BY likes_data.added_at DESC
+             ) FROM (
+               SELECT pl.added_at, pl.user_id, u.login 
+               FROM post_likes pl 
+               JOIN users u ON u.id = pl.user_id 
+               WHERE pl.post_id = p.id AND pl.status = 'Like' 
+               ORDER BY pl.added_at DESC 
+               LIMIT 3
+             ) likes_data) AS newest_likes
       FROM posts p
       ${where}
       ORDER BY ${sortBy} ${sortDir}

@@ -71,10 +71,11 @@ export class PostsService {
   async getPostComments(
     postId: string,
     query: GetPostCommentsQueryParams,
+    userId?: string,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     // Ensure post exists
     await this.postsRepository.findOrNotFoundFail(postId);
-    return this.commentsQueryRepository.getAllByPostId(postId, query);
+    return this.commentsQueryRepository.getAllByPostId(postId, query, userId);
   }
 
   async createComment(

@@ -89,12 +89,14 @@ export class PostsController {
     await this.postsService.updateLikeStatus(postId, likeStatusDto, userId);
   }
 
+  @UseGuards(JwtAuthGuardForUserId)
   @Get(':postId/comments')
   async getPostComments(
     @Param('postId') postId: string,
     @Query() query: GetPostCommentsQueryParams,
+    @CurrentUser() userId?: string,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
-    return this.postsService.getPostComments(postId, query);
+    return this.postsService.getPostComments(postId, query, userId);
   }
 
   @Post(':postId/comments')
