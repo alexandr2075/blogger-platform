@@ -1,4 +1,5 @@
-import { PostDocument } from '../../domain/post.entity';
+
+import { Post } from '../../domain/post.entity';
 import { LikeDetails, LikeStatus } from '../view-dto/extended-posts.view-dto';
 
 export class PostViewDto {
@@ -17,30 +18,28 @@ export class PostViewDto {
   };
 
   static mapToView(
-    post: PostDocument,
+    post: Post,
     userId?: string,
     login?: string,
   ): PostViewDto {
-    let myStatus = LikeStatus.None;
-    if (userId) {
-      if (post.likesCountArray.includes(userId)) myStatus = LikeStatus.Like;
-      else if (post.dislikesCountArray.includes(userId))
-        myStatus = LikeStatus.Dislike;
-    }
+    // With TypeORM entity, like status/counts are computed in query layer.
+    // Default here to safe values; callers can overwrite if needed.
+    const myStatus = LikeStatus.None;
     return {
-      id: post._id.toString(),
+      id: post.id,
       title: post.title,
       shortDescription: post.shortDescription,
       content: post.content,
       blogId: post.blogId,
-      blogName: post.blogName,
+      blogName: (post as any).blog?.name ?? '',
       createdAt: post.createdAt,
       extendedLikesInfo: {
-        likesCount: post.likesCountArray.length,
-        dislikesCount: post.dislikesCountArray.length,
+        likesCount: 0,
+        dislikesCount: 0,
         myStatus,
-        newestLikes: post.extendedLikesInfo.newestLikes.slice(-3).reverse(),
+        newestLikes: [],
       },
     };
   }
 }
+

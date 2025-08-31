@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { CreateBlogInputDto } from '../api/input-dto/blogs.input-dto';
 import { UpdateBlogInputDto } from '../api/input-dto/update-blog.input-dto';
-import { BlogsRepositoryPostgres } from '../infrastructure/blogs.repository-postgres';
+import { BlogsRepository } from '../infrastructure/blogs.repository';
 
 @Injectable()
 export class BlogsService {
   constructor(
-    private blogsRepository: BlogsRepositoryPostgres,
+    private blogsRepository: BlogsRepository,
   ) {}
 
   async createBlog(dto: CreateBlogInputDto): Promise<string> {

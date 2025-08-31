@@ -1,64 +1,196 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PostgresService } from '../../../core/database/postgres.config';
-
-export interface AdminCreateBlogDto {
-  name: string;
-  description: string;
-  websiteUrl: string;
-}
-
-export interface AdminUpdateBlogDto {
-  name: string;
-  description: string;
-  websiteUrl: string;
-}
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { Blog } from '@modules/bloggers-platform/blogs/domain/blog.entity';
+import { Post } from '@modules/bloggers-platform/posts/domain/post.entity';
+import { QueryBlogsDto } from './dto/query-blogs.dto';
+import { QueryPostsDto } from './dto/query-posts.dto';
+import { CreateBlogDto } from './dto/create-blog.dto';
+import { UpdateBlogDto } from './dto/update-blog.dto';
+import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 @Injectable()
 export class AdminBlogsRepository {
-  constructor(private readonly postgres: PostgresService) {}
+  constructor(
+    @InjectRepository(Blog)
+    private readonly blogRepository: Repository<Blog>,
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
+  ) {}
 
-  private isUuid(id: string): boolean {
-    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id);
+  async findAllBlogs(query: QueryBlogsDto) {
+    const {
+      searchNameTerm,
+      sortBy = 'createdAt',
+      sortDirection = 'desc',
+      pageNumber = 1,
+      pageSize = 10,
+    } = query;
+
+    const queryBuilder = this.blogRepository
+      .createQueryBuilder('blog')
+      .where('blog.deletedAt IS NULL');
+
+    if (searchNameTerm) {
+      queryBuilder.andWhere('blog.name ILIKE :searchTerm', {
+        searchTerm: `%${searchNameTerm}%`,
+      });
+    }
+
+    // Apply sorting with proper column mapping
+    const sortColumn = sortBy === 'createdAt' ? 'blog.createdAt' : `blog.${sortBy}`;
+    queryBuilder.orderBy(sortColumn, sortDirection.toUpperCase() as 'ASC' | 'DESC');
+
+    // Apply pagination
+    const offset = (pageNumber - 1) * pageSize;
+    queryBuilder.skip(offset).take(pageSize);
+
+    const [blogs, totalCount] = await queryBuilder.getManyAndCount();
+
+    return {
+      blogs,
+      totalCount,
+      pagesCount: Math.ceil(totalCount / pageSize),
+      page: pageNumber,
+      pageSize,
+    };
   }
 
-  async getByIdOrNotFoundFail(id: string) {
-    if (!this.isUuid(id)) throw new NotFoundException('blog not found');
-    const rows = await this.postgres.query(
-      `SELECT * FROM blogs WHERE id = $1 AND deleted_at IS NULL`,
-      [id],
-    );
-    if (rows.length === 0) throw new NotFoundException('blog not found');
-    return rows[0];
+  async createBlog(dto: CreateBlogDto): Promise<Blog> {
+    const blog = this.blogRepository.create({
+      name: dto.name,
+      description: dto.description,
+      websiteUrl: dto.websiteUrl,
+      isMembership: false,
+      createdAt: new Date().toISOString(),
+      deletedAt: null,
+      userId: null,
+    });
+
+    return await this.blogRepository.save(blog);
   }
 
-  async create(dto: AdminCreateBlogDto): Promise<string> {
-    const rows = await this.postgres.query(
-      `INSERT INTO blogs (name, description, website_url)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [dto.name, dto.description, dto.websiteUrl],
-    );
-    return rows[0].id as string;
+  async findBlogById(id: string): Promise<Blog | null> {
+    return await this.blogRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
   }
 
-  async update(id: string, dto: AdminUpdateBlogDto): Promise<void> {
-    if (!this.isUuid(id)) throw new NotFoundException('blog not found');
-    const rows = await this.postgres.query(
-      `UPDATE blogs
-       SET name = $1, description = $2, website_url = $3, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4 AND deleted_at IS NULL
-       RETURNING id`,
-      [dto.name, dto.description, dto.websiteUrl, id],
+  async updateBlog(id: string, dto: UpdateBlogDto): Promise<boolean> {
+    const result = await this.blogRepository.update(
+      { id, deletedAt: IsNull() },
+      {
+        name: dto.name,
+        description: dto.description,
+        websiteUrl: dto.websiteUrl,
+      }
     );
-    if (rows.length === 0) throw new NotFoundException('blog not found');
+
+    return (result.affected ?? 0) > 0;
   }
 
-  async delete(id: string): Promise<void> {
-    if (!this.isUuid(id)) throw new NotFoundException('blog not found');
-    const rows = await this.postgres.query(
-      `UPDATE blogs SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
-      [id],
+  async deleteBlog(id: string): Promise<boolean> {
+    const result = await this.blogRepository.update(
+      { id, deletedAt: IsNull() },
+      { deletedAt: new Date().toISOString() }
     );
-    if (rows.length === 0) throw new NotFoundException('blog not found');
+
+    return (result.affected ?? 0) > 0;
+  }
+
+  async findPostsByBlogId(blogId: string, query: QueryPostsDto) {
+    const {
+      sortBy = 'createdAt',
+      sortDirection = 'desc',
+      pageNumber = 1,
+      pageSize = 10,
+    } = query;
+
+    const queryBuilder = this.postRepository
+      .createQueryBuilder('post')
+      .where('post.blogId = :blogId', { blogId })
+      .andWhere('post.deletedAt IS NULL');
+
+    // Apply sorting
+    const sortColumn = sortBy === 'createdAt' ? 'post.createdAt' : `post.${sortBy}`;
+    queryBuilder.orderBy(sortColumn, sortDirection.toUpperCase() as 'ASC' | 'DESC');
+
+    // Apply pagination
+    const offset = (pageNumber - 1) * pageSize;
+    queryBuilder.skip(offset).take(pageSize);
+
+    const [posts, totalCount] = await queryBuilder.getManyAndCount();
+
+    return {
+      posts,
+      totalCount,
+      pagesCount: Math.ceil(totalCount / pageSize),
+      page: pageNumber,
+      pageSize,
+    };
+  }
+
+  async createPost(blogId: string, dto: CreatePostDto): Promise<Post | null> {
+    // First check if blog exists
+    const blog = await this.findBlogById(blogId);
+    if (!blog) {
+      return null;
+    }
+
+    const post = this.postRepository.create({
+      title: dto.title,
+      shortDescription: dto.shortDescription,
+      content: dto.content,
+      blogId: blogId,
+      blogName: blog.name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      userId: null,
+    });
+
+    return await this.postRepository.save(post);
+  }
+
+  async findPostById(postId: string): Promise<Post | null> {
+    return await this.postRepository.findOne({
+      where: { id: postId, deletedAt: IsNull() },
+    });
+  }
+
+  async updatePost(blogId: string, postId: string, dto: UpdatePostDto): Promise<boolean> {
+    // Check if blog exists
+    const blog = await this.findBlogById(blogId);
+    if (!blog) {
+      return false;
+    }
+
+    const result = await this.postRepository.update(
+      { id: postId, blogId, deletedAt: IsNull() },
+      {
+        title: dto.title,
+        shortDescription: dto.shortDescription,
+        content: dto.content,
+        updatedAt: new Date(),
+      }
+    );
+
+    return (result.affected ?? 0) > 0;
+  }
+
+  async deletePost(blogId: string, postId: string): Promise<boolean> {
+    // Check if blog exists
+    const blog = await this.findBlogById(blogId);
+    if (!blog) {
+      return false;
+    }
+
+    const result = await this.postRepository.update(
+      { id: postId, blogId, deletedAt: IsNull() },
+      { deletedAt: new Date() }
+    );
+
+    return (result.affected ?? 0) > 0;
   }
 }

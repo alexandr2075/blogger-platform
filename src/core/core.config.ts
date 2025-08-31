@@ -80,7 +80,9 @@ export class CoreConfig {
   constructor(private configService: ConfigService<any, true>) {
     this.port = Number(this.configService.get('PORT'));
     this.mongoURI = this.configService.get('MONGO_URI');
-    this.env = this.configService.get('NODE_ENV');
+    const rawEnv = this.configService.get<string>('NODE_ENV');
+    // Normalize Jest default 'test' to our accepted 'testing'
+    this.env = rawEnv === 'test' ? Environments.TESTING : rawEnv;
     this.refreshTokenSecret = this.configService.get('REFRESH_TOKEN_SECRET');
     this.accessTokenSecret = this.configService.get('ACCESS_TOKEN_SECRET');
     this.refreshTokenExpire = this.configService.get('REFRESH_TOKEN_EXPIRE_IN') || '30d';

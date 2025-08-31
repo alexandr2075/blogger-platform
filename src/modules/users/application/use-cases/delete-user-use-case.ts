@@ -1,6 +1,8 @@
-import { User } from '../../domain/user.entity';
-import { UsersRepositoryPostgres } from '../../infrastructure/users.repository-postgres';
+import { BadRequestException } from '@nestjs/common';
+import { UsersQueryRepository } from '../../infrastructure/users.query-repository';
 import { CommandHandler } from '@nestjs/cqrs';
+import { UsersRepository } from '../../infrastructure/users.repository';
+import { UserViewDto } from '../../api/view-dto/users.view-dto';
 
 export class DeleteUserCommand {
   constructor(public id: string) {}
@@ -9,15 +11,19 @@ export class DeleteUserCommand {
 @CommandHandler(DeleteUserCommand)
 export class DeleteUserUseCase {
   constructor(
-    private usersRepository: UsersRepositoryPostgres,
+    private usersQueryRepository: UsersQueryRepository,
+    private usersRepository: UsersRepository,
   ) {}
 
   async execute(command: DeleteUserCommand) {
-    const user: User = await this.usersRepository.findOrNotFoundFail(
+    const user: UserViewDto = await this.usersQueryRepository.getOneById(
       command.id,
     );
-    user.makeDeleted();
 
-    await this.usersRepository.update(user);
+    if (!user) {
+      throw new BadRequestException('user not found');
+    }
+
+    await this.usersRepository.deleteById(user.id);
   }
 }

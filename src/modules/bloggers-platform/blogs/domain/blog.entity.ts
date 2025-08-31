@@ -1,54 +1,42 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
-import { CreateBlogInputDto } from '../api/input-dto/blogs.input-dto';
-import { UpdateBlogInputDto } from '../api/input-dto/update-blog.input-dto';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from '@modules/users/domain/user.entity';
+import { Post } from '@modules/bloggers-platform/posts/domain/post.entity';
 
-@Schema({ timestamps: true })
+@Entity('blogs')
 export class Blog {
-  @Prop({ type: String, required: true })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
   name: string;
 
-  @Prop({ type: String, required: true })
+  @Column()
   description: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ name: 'websiteUrl' })
   websiteUrl: string;
 
-  @Prop({ type: Boolean, default: false })
+  @Column({ name: 'isMembership', default: false })
   isMembership: boolean;
 
-  createdAt: Date;
-  updatedAt: Date;
+  @Column({ name: 'createdAt', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: string;
 
-  @Prop({ type: Date, nullable: true })
-  deletedAt: Date | null;
+  @Column({ name: 'deletedAt', type: 'timestamp with time zone', nullable: true })
+  deletedAt: string | null;
 
-  static createInstance(dto: CreateBlogInputDto): BlogDocument {
-    const blog = new this();
-    blog.name = dto.name;
-    blog.description = dto.description;
-    blog.websiteUrl = dto.websiteUrl;
-    blog.isMembership = false;
-    blog.deletedAt = null;
-    return blog as BlogDocument;
-  }
+  @OneToMany(() => Post, (post: Post) => post.blog)
+  posts: Post[];
 
-  makeDeleted() {
-    if (this.deletedAt !== null) {
-      throw new Error('Entity already deleted');
-    }
-    this.deletedAt = new Date();
-  }
+  @ManyToOne(() => User, (user) => user.blogs, { onDelete: 'CASCADE' })
+  user: User;
 
-  update(dto: UpdateBlogInputDto) {
-    this.name = dto.name;
-    this.description = dto.description;
-    this.websiteUrl = dto.websiteUrl;
-  }
+  @Column({ name: 'userId', type: 'uuid', nullable: true })
+  userId: string | null;
 }
-
-export const BlogSchema = SchemaFactory.createForClass(Blog);
-BlogSchema.loadClass(Blog);
-
-export type BlogDocument = HydratedDocument<Blog>;
-export type BlogModelType = Model<BlogDocument> & typeof Blog;

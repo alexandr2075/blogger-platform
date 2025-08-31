@@ -1,48 +1,36 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, HydratedDocument, Model } from 'mongoose';
-import { CommentsInputDto } from '../dto/comments.input-dto';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Post } from '@modules/bloggers-platform/posts/domain/post.entity';
+import { User } from '@modules/users/domain/user.entity';
 
-@Schema({ timestamps: true })
-export class Comment extends Document {
-  @Prop({ required: true })
+@Entity('comments')
+export class Comment {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
   content: string;
 
-  @Prop({ required: true })
-  userId: string;
-
-  @Prop({ required: true })
-  userLogin: string;
-
-  @Prop({ required: true })
-  postId: string;
-
-  @Prop()
-  likesCountArray: string[];
-
-  @Prop()
-  dislikesCountArray: string[];
-
-  @Prop({ type: Date })
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
 
-  @Prop({ type: Date })
-  updatedAt: Date;
+  @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
+  post: Post;
 
-  static createInstance(dto: CommentsInputDto): CommentDocument {
-    const comment = new this();
-    comment.content = dto.content;
-    comment.userId = dto.userId;
-    comment.userLogin = dto.userLogin;
-    comment.postId = dto.postId;
-    comment.createdAt = new Date();
-    comment.likesCountArray = [];
-    comment.dislikesCountArray = [];
-    return comment as CommentDocument;
-  }
+  @Column({ name: 'postId' })
+  postId: string;
+
+  @ManyToOne(() => User, (user) => user.comments, { onDelete: 'CASCADE' })
+  user: User;
+
+  @Column({ name: 'userId' })
+  userId: string;
+
+  @Column({ name: 'userLogin' })
+  userLogin: string;
 }
-
-export const CommentSchema = SchemaFactory.createForClass(Comment);
-CommentSchema.loadClass(Comment);
-
-export type CommentDocument = HydratedDocument<Comment>;
-export type CommentModelType = Model<CommentDocument> & typeof Comment;

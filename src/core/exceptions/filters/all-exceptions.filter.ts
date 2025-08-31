@@ -24,13 +24,13 @@ export class AllHttpExceptionsFilter implements ExceptionFilter {
     // const status = HttpStatus.INTERNAL_SERVER_ERROR;
 
     const status = exception.getStatus();
-    const responseBody = this.buildResponseBody(request.url, message);
+    const responseBody = this.buildResponseBody(exception, request.url, message);
 
     response.status(status).json(responseBody);
   }
 
   private buildResponseBody(
-    // exception: any,
+    exception: HttpException,
     requestUrl: string,
     message: string,
   ) {
@@ -45,6 +45,12 @@ export class AllHttpExceptionsFilter implements ExceptionFilter {
         extensions: [],
         code: DomainExceptionCode.InternalServerError,
       };
+    }
+
+    // Check if the exception already has the proper errorsMessages format
+    const response = exception.getResponse();
+    if (typeof response === 'object' && response !== null && 'errorsMessages' in response) {
+      return response;
     }
 
     return {

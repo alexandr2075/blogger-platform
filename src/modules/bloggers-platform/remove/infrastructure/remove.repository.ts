@@ -1,18 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { PostgresService } from '../../../../core/database/postgres.config';
+import { EntityManager } from 'typeorm';
+import { InjectEntityManager } from '@nestjs/typeorm';
 
 @Injectable()
 export class RemoveRepository {
-  constructor(private postgres: PostgresService) {}
+  constructor(
+    @InjectEntityManager()
+    private readonly entityManager: EntityManager,
+  ) {}
 
   async removeAllData(): Promise<void> {
-    // Delete in order to respect foreign key constraints
-    await this.postgres.query('DELETE FROM comment_likes', []);
-    await this.postgres.query('DELETE FROM comments', []);
-    await this.postgres.query('DELETE FROM post_likes', []);
-    await this.postgres.query('DELETE FROM posts', []);
-    await this.postgres.query('DELETE FROM blogs', []);
-    await this.postgres.query('DELETE FROM devices', []);
-    await this.postgres.query('DELETE FROM users', []);
+    await this.entityManager.query(
+      'TRUNCATE comment_likes, "comments", likes, posts, blogs, devices, users RESTART IDENTITY CASCADE',
+    );
   }
 }

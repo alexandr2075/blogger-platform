@@ -1,5 +1,3 @@
-import { BlogDocument } from '../../domain/blog.entity';
-
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -76,7 +74,7 @@ export class BlogViewDto {
   @IsBoolean()
   isMembership: boolean;
 
-  static mapToView(blog: BlogDocument): BlogViewDto {
+  static mapToView(blog): BlogViewDto {
     const dto = new BlogViewDto();
     dto.id = blog._id.toString();
     dto.name = blog.name;

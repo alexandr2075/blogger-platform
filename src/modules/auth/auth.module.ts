@@ -6,10 +6,12 @@ import { AuthService } from './application/auth.service';
 import { EmailModule } from '@core/email/email.module';
 import { DevicesModule } from '@modules/devices/devices.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { PostgresService } from '../../core/database/postgres.config';
+import { CqrsModule } from '@nestjs/cqrs';
+import { RefreshTokenGuard } from '@core/guards/refresh-token.guard';
 
 @Module({
   imports: [
+    CqrsModule,
     EmailModule,
     UsersModule,
     DevicesModule,
@@ -24,6 +26,6 @@ import { PostgresService } from '../../core/database/postgres.config';
     // }),
   ],
   controllers: [AuthController],
-  providers: [PostgresService, AuthService],
+  providers: [AuthService, RefreshTokenGuard],
 })
 export class AuthModule {}

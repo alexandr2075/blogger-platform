@@ -12,13 +12,13 @@ import {
 import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
 import { LikeStatusDto } from '../dto/like-status.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
-import { CommentsServicePostgres } from '../application/comments.service-postgres';
+import { CommentsService } from '../application/comments.service';
 import { CurrentUser } from '../../../../core/decorators/current-user.decorator';
 import { JwtAuthGuardForUserId } from '../../../../core/guards/jwt-auth-for-user-id.guard';
 
 @Controller('comments')
 export class CommentsController {
-  constructor(private readonly commentsService: CommentsServicePostgres) {}
+  constructor(private readonly commentsService: CommentsService) {}
 
   @Get(':id')
   @UseGuards(JwtAuthGuardForUserId)

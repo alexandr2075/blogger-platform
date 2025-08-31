@@ -6,77 +6,79 @@ import {
 import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { LikeStatusDto } from '../dto/like-status.dto';
 import { CommentsRepository } from '../infrastructure/comments.repository';
-import { Types } from 'mongoose';
+import { CommentsQueryRepository } from '../infrastructure/comments.query-repository';
 import { CommentViewDto } from '../dto/comments.view-dto';
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly commentsRepository: CommentsRepository) {}
+  constructor(
+    private readonly commentsRepository: CommentsRepository,
+    private readonly commentsQueryRepository: CommentsQueryRepository,
+  ) {}
 
   async findCommentById(
-    id: string | Types.ObjectId,
+    id: string,
     userId: string | undefined,
-  ) {
-    const commentId = typeof id === 'string' ? new Types.ObjectId(id) : id;
-    if (!Types.ObjectId.isValid(commentId)) {
-      throw new NotFoundException('invalid comment id');
-    }
-    const comment = await this.commentsRepository.findById(commentId);
-    if (!comment) {
-      throw new NotFoundException('Комментарий не найден');
-    }
-    return CommentViewDto.mapToView(comment, userId);
+  ): Promise<CommentViewDto> {
+    return this.commentsQueryRepository.getByIdOrNotFoundFail(id, userId);
   }
 
   async updateComment(
     commentId: string,
     updateCommentDto: UpdateCommentDto,
     userId: string,
-  ) {
-    const comment = await this.commentsRepository.findById(
-      new Types.ObjectId(commentId),
-    );
-
-    if (!comment) {
-      throw new NotFoundException('Comment not exists');
+  ): Promise<void> {
+    // Check if comment exists and user owns it
+    const hasOwnership = await this.commentsRepository.checkOwnership(commentId, userId);
+    if (!hasOwnership) {
+      // Try to find comment to determine if it doesn't exist or user doesn't own it
+      try {
+        await this.commentsRepository.findOrNotFoundFail(commentId);
+        throw new ForbiddenException('You do not have permission to edit this comment');
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          throw error;
+        }
+        throw new ForbiddenException('You do not have permission to edit this comment');
+      }
     }
 
-    if (comment && comment.userId !== userId) {
-      throw new ForbiddenException(
-        'У вас нет прав для редактирования этого комментария',
-      );
-    }
-
-    await this.commentsRepository.update(commentId, updateCommentDto);
+    await this.commentsRepository.update(commentId, {
+      content: updateCommentDto.content,
+    });
   }
 
-  async deleteComment(commentId: string, userId: string) {
-    const comment = await this.commentsRepository.findById(
-      new Types.ObjectId(commentId),
-    );
-    if (!comment) {
-      throw new NotFoundException('Comment not exists ');
-    }
-    if (comment && comment.userId !== userId) {
-      throw new ForbiddenException(
-        'У вас нет прав для удаления этого комментария',
-      );
+  async deleteComment(commentId: string, userId: string): Promise<void> {
+    // Check if comment exists and user owns it
+    const hasOwnership = await this.commentsRepository.checkOwnership(commentId, userId);
+    if (!hasOwnership) {
+      // Try to find comment to determine if it doesn't exist or user doesn't own it
+      try {
+        await this.commentsRepository.findOrNotFoundFail(commentId);
+        throw new ForbiddenException('You do not have permission to delete this comment');
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          throw error;
+        }
+        throw new ForbiddenException('You do not have permission to delete this comment');
+      }
     }
 
-    await this.commentsRepository.delete(commentId);
+    await this.commentsRepository.softDelete(commentId);
   }
 
   async updateLikeStatus(
     commentId: string,
     likeStatusDto: LikeStatusDto,
     userId: string,
-  ) {
-    const commentObjectId = new Types.ObjectId(commentId);
-    await this.findCommentById(commentObjectId, userId);
-    await this.commentsRepository.updateLikeStatus(
-      commentObjectId,
-      likeStatusDto,
+  ): Promise<void> {
+    // Ensure comment exists before updating like status
+    await this.commentsRepository.findOrNotFoundFail(commentId);
+    
+    await this.commentsRepository.upsertLike(
+      commentId,
       userId,
+      likeStatusDto.likeStatus as 'Like' | 'Dislike' | 'None',
     );
   }
 }

@@ -1,6 +1,6 @@
 import { configModule } from './config-dynamic-module';
 import { Module } from '@nestjs/common';
-
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CoreModule } from './core/core.module';
@@ -13,12 +13,31 @@ import { APP_FILTER } from '@nestjs/core';
 import { DomainHttpExceptionsFilter } from './core/exceptions/filters/domain-exceptions.filter';
 import { AllHttpExceptionsFilter } from '@core/exceptions/filters/all-exceptions.filter';
 import { CoreConfig } from '@core/core.config';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DevicesModule } from '@modules/devices/devices.module';
 import { AdminModule } from './modules/admin/admin.module';
+import databaseConf, { type DatabaseConfig }  from './core/config/db.config';
 
 @Module({
   imports: [
-    configModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.development', '.env.testing', '.env'],
+      load: [databaseConf],
+    }),
+    TypeOrmModule.forRootAsync({
+      useFactory: (config: ConfigService<DatabaseConfig>): TypeOrmModuleOptions => {
+        const dbConfig = config.get('database', {
+          infer: true,
+        });
+        if (!dbConfig) {
+          throw new Error('Database configuration is missing!');
+        }
+        return dbConfig;
+      },
+      inject: [ConfigService],
+    }),
+
     UsersModule,
     AdminModule,
     BloggersPlatformModule,

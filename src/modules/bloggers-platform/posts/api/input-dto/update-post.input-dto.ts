@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength, IsMongoId } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 // DTO для обновления поста
@@ -23,7 +23,7 @@ export class UpdatePostInputDto {
   @MaxLength(1000, { message: 'Content must not exceed 1000 characters' })
   content: string;
 
-  @IsMongoId({ message: 'Blog ID must be a valid MongoDB ObjectId' })
+  @IsUUID('4', { message: 'Blog ID must be a valid UUID v4' })
   @IsNotEmpty({ message: 'Blog ID is required' })
   blogId: string;
 }

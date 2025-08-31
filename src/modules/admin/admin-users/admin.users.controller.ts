@@ -15,7 +15,7 @@ export class AdminUsersController {
   @Get()
   async getAll(
     @Query() query: GetUsersQueryParams
-): Promise<PaginatedViewDto<UserViewDto[]>> {
+){
     return this.adminUsersService.getAll(query);
   }
 

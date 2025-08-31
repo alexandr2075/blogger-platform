@@ -1,60 +1,57 @@
-import { CreateUserDomainDto } from "./dto/create-user.domain.dto";
-import { ConfirmedStatus, EmailConfirmation } from "./email.confirmation.interface";
-import { Name } from "./name.interface";
+import {
+  Column,
+  Entity,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  DeleteDateColumn,
+} from 'typeorm';
+import { Device } from '@modules/devices/domain/device.entity';
+import { Blog } from '@modules/bloggers-platform/blogs/domain/blog.entity';
+import { Post } from '@modules/bloggers-platform/posts/domain/post.entity';
+import { Like } from '@modules/bloggers-platform/posts/domain/like.entity';
+import { Comment } from '@modules/bloggers-platform/comments/domain/comment.entity';
+import { ConfirmedStatus } from './email.confirmation.interface';
 
+@Entity('users')
 export class User {
-    id: string;
-    login: string;
-    email: string;
-    passwordHash: string;
-    createdAt: Date;
-    updatedAt: Date;
-    deletedAt: Date | null;
-    name: Name;
-    emailConfirmation: EmailConfirmation;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    static createInstance(dto: CreateUserDomainDto): User{
-        const user = new this();
-        user.login = dto.login;
-        user.email = dto.email;
-        user.passwordHash = dto.passwordHash;
-        user.deletedAt = null;
-        user.emailConfirmation = {
-          confirmationCode: dto.confirmationCode,
-          expirationDate: new Date(),
-          isConfirmed: ConfirmedStatus.Unconfirmed,
-        };
-        user.name = {
-          firstName: 'firstName xxx',
-          lastName: 'lastName yyy',
-        };
-        return user;
-    }
+  @Column()
+  login: string;
 
-    makeDeleted() {
-      if (this.deletedAt !== null) {
-        throw new Error('Entity already deleted');
-      }
-      this.deletedAt = new Date();
-    }
+  @Column()
+  email: string;
 
-    update(dto: any) {
-      if (dto.email && dto.email !== this.email) {
-        this.emailConfirmation.isConfirmed = ConfirmedStatus.Unconfirmed;
-        this.email = dto.email;
-      }
-    }
+  @Column({ name: 'passwordHash' })
+  passwordHash: string;
 
-    confirm() {
-      this.emailConfirmation.isConfirmed = ConfirmedStatus.Confirmed;
-      this.emailConfirmation.confirmationCode = undefined;
-    }
+  @Column({ name: 'confirmationCode', type: 'varchar', nullable: true })
+  confirmationCode: string | null;
 
-    updatePassword(newPasswordHash: string) {
-      this.passwordHash = newPasswordHash;
-    }
+  @Column({ name: 'isConfirmed', type: 'enum', enum: ConfirmedStatus, nullable: true })
+  isConfirmed?: ConfirmedStatus;
+  
+  @OneToMany(() => Device, (device) => device.user)
+  devices: Device[];
 
-    setConfirmationCode(code: string) {
-      this.emailConfirmation.confirmationCode = code;
-    }
+  @OneToMany(() => Blog, (blog) => blog.user)
+  blogs: Blog[];
+
+  @OneToMany(() => Post, (post) => post.user)
+  posts: Post[];
+
+  @OneToMany(() => Like, (like) => like.user)
+  likes: Like[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments: Comment[];
+
+  @DeleteDateColumn({ name: 'deletedAt', type: 'timestamp with time zone', nullable: true })
+  deletedAt?: Date | null;
+
+  @Column({ name: 'createdAt', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: string;
+
 }

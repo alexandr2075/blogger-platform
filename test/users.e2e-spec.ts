@@ -1,9 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { v4 as uuidv4 } from 'uuid';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/setup/app.setup';
 import { EmailService } from '../src/core/email/email.service';
+import { RemoveService } from '../src/modules/bloggers-platform/remove/application/remove.service';
+import { RemoveRepository } from '../src/modules/bloggers-platform/remove/infrastructure/remove.repository';
 // Ensure DB schema is present before tests
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { runMigrations } = require('../scripts/run-migrations');
@@ -20,17 +23,20 @@ describe('Users API (e2e)', () => {
     };
     const testingModuleBuilder = Test.createTestingModule({
       imports: [AppModule],
+      providers: [RemoveService, RemoveRepository],
     });
     const moduleFixture: TestingModule = await testingModuleBuilder
       .overrideProvider(EmailService)
       .useValue(emailServiceMock)
       .compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({
+      logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+    });
     setupApp(app);
     await app.init();
     httpServer = app.getHttpServer();
-  });
+      });
 
   afterAll(async () => {
     await app.close();
@@ -134,7 +140,7 @@ describe('Users API (e2e)', () => {
   describe('GET /users/:id', () => {
     it('should return 404 for non-existent user', async () => {
       const response = await request(httpServer)
-        .get('/users/nonexistentid')
+        .get(`/users/${uuidv4()}`)
         .auth('admin', 'qwerty');
       expect(response.status).toBe(404);
     });
@@ -267,9 +273,45 @@ describe('Users API (e2e)', () => {
 
     it('should return 404 for non-existent user', async () => {
       const response = await request(httpServer)
-        .delete('/users/nonexistentid')
+        .delete(`/users/${uuidv4()}`)
         .auth('admin', 'qwerty');
       expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST sa/users', () => {
+    it('admin should create a new user', async () => {
+      const response = await request(httpServer)
+        .post('/sa/users')
+        .auth('admin', 'qwerty')
+        .send({
+          login: 'newuser',
+          password: 'password123',
+          email: 'new@example.com',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.login).toBe('newuser');
+      expect(response.body.email).toBe('new@example.com');
+      expect(response.body.id).toBeDefined();
+      // Password should not be returned
+      expect(response.body.password).toBeUndefined();
+    });
+
+    it('admin should return all users', async () => {
+      await request(httpServer)
+        .post('/sa/users')
+        .auth('admin', 'qwerty')
+        .send({
+          login: 'newuser',
+          password: 'password123',
+          email: 'new@example.com',
+        });
+      const response2 = await request(httpServer)
+        .get('/sa/users')
+        .auth('admin', 'qwerty');
+
+      expect(response2.status).toBe(200);
     });
   });
 });

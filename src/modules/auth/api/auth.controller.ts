@@ -65,7 +65,7 @@ export class AuthController {
   async registrationConfirmation(
     @Body() dto: RegistrationConfirmationInputDto,
   ): Promise<void> {
-    await this.authService.confirmRegistration(dto);
+    await this.authService.registrationConfirmation(dto);
   }
 
   @Throttle({ default: { limit: 5, ttl: 10000 } })
@@ -100,12 +100,8 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(RefreshTokenGuard)
-  async logout(@RefreshToken() refreshToken: string) {
-    console.log('[LOGOUT] Using RefreshTokenGuard - token received:', {
-      refreshToken: refreshToken ? 'present' : 'missing',
-      tokenLength: refreshToken?.length || 0
-    });
-    await this.authService.logout(refreshToken);
+  async logout(@RefreshToken() refreshToken: string, @Req() request: any) {
+    await this.authService.logout(refreshToken, request.refreshTokenPayload);
   }
 
   @Get('me')

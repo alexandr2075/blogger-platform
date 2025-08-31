@@ -57,7 +57,9 @@ export class DevicesService {
   async deleteDevices(refreshTokenCookie: string) {
     const refreshToken = refreshTokenCookie.split(';')[0].split('=')[1];
     if (!refreshToken) {
-      throw new UnauthorizedException('Invalid refresh token format');
+      throw new UnauthorizedException({
+        errorsMessages: [{ message: 'Invalid refresh token format', field: 'refreshToken' }]
+      });
     }
 
     const payload: RefreshPayload = this.jwtService.verify(refreshToken, {
@@ -73,7 +75,9 @@ export class DevicesService {
   async deleteDevicesByDeviceId(refreshTokenCookie: string, deviceId: string) {
     const refreshToken = refreshTokenCookie.split(';')[0].split('=')[1];
     if (!refreshToken) {
-      throw new UnauthorizedException('Invalid refresh token format');
+      throw new UnauthorizedException({
+        errorsMessages: [{ message: 'Invalid refresh token format', field: 'refreshToken' }]
+      });
     }
 
     const payload: RefreshPayload = this.jwtService.verify(refreshToken, {

@@ -61,7 +61,6 @@ describe('Auth API (e2e)', () => {
     it('should login user successfully', async () => {
       // registration and login of a user
       const response = await registrationAndLoginUser(request, httpServer);
-      console.log('Login response:', response);
       expect(response.accessToken).toBeDefined();
       expect(response.refreshToken).toBeDefined();
     });

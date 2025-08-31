@@ -1,5 +1,4 @@
-import { CommentDocument } from '../domain/comment.entity';
-
+import { Comment } from '../domain/comment.entity';
 export enum LikeStatus {
   None = 'None',
   Like = 'Like',
@@ -24,49 +23,26 @@ export class CommentViewDto {
   createdAt: Date;
   likesInfo?: LikesInfo;
 
-  static mapToView(comment: CommentDocument, userId?: string): CommentViewDto {
-    if (!comment || !comment._id) {
-      throw new Error('Invalid comment document');
+  static mapToView(comment: Comment, userId?: string): CommentViewDto {
+    if (!comment || !comment.id) {
+      throw new Error('Invalid comment entity');
     }
-    if (
-      (userId && comment.likesCountArray?.includes(userId)) ||
-      (userId && comment.dislikesCountArray?.includes(userId))
-    ) {
-      return {
-        id: comment._id.toString(),
-        content: comment.content,
-        commentatorInfo: {
-          userId: comment.userId,
-          userLogin: comment.userLogin,
-        },
-        createdAt: comment.createdAt,
-        likesInfo: {
-          likesCount: comment.likesCountArray.length,
-          dislikesCount: comment.dislikesCountArray.length,
-          myStatus: comment.likesCountArray.includes(userId)
-            ? LikeStatus.Like
-            : comment.dislikesCountArray.includes(userId)
-              ? LikeStatus.Dislike
-              : LikeStatus.None,
-        },
-      };
-    } else {
-      return {
-        id: comment._id.toString(),
-        content: comment.content,
-        commentatorInfo: {
-          userId: comment.userId,
-          userLogin: comment.userLogin,
-          // userId: '',
-          // userLogin: '',
-        },
-        createdAt: comment.createdAt,
-        likesInfo: {
-          likesCount: comment.likesCountArray.length,
-          dislikesCount: comment.dislikesCountArray.length,
-          myStatus: LikeStatus.None,
-        },
-      };
-    }
+
+    // Likes are stored separately in SQL now; we default to zeros/None here.
+    // Upstream code can enrich likesInfo if needed.
+    return {
+      id: comment.id,
+      content: comment.content,
+      commentatorInfo: {
+        userId: comment.userId,
+        userLogin: comment.userLogin,
+      },
+      createdAt: comment.createdAt,
+      likesInfo: {
+        likesCount: 0,
+        dislikesCount: 0,
+        myStatus: LikeStatus.None,
+      },
+    };
   }
 }

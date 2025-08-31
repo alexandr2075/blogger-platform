@@ -96,7 +96,6 @@ describe('Posts API (e2e)', () => {
 
       // Get all posts
       const response = await request(httpServer).get('/posts');
-      // console.log('response:', response.body);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(1);
       expect(response.body.items[0].title).toBe('Test Post');
@@ -472,7 +471,6 @@ describe('Posts API (e2e)', () => {
     //   const { accessToken, postId, userId, commentId } = await createComment(request, httpServer)
     //   expect(comment.status).toBe(201);
     //   expect(comment.body.content).toBe('TestContentLonger20MustBe');
-    //   console.log('comment:', comment.body);
     // });
 
     it('should return comment after like', async () => {

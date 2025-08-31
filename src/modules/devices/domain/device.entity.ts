@@ -1,24 +1,38 @@
-import { DeviceInputDto } from '@modules/devices/dto/device.input-dto';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from '@modules/users/domain/user.entity';
 
+@Entity('devices')
 export class Device {
+  @PrimaryGeneratedColumn('uuid')
   id: string;
-  userId: string;
-  deviceId: string;
-  iat: number;
-  deviceName: string;
-  ip: string;
-  exp: number;
-  createdAt: Date;
-  updatedAt: Date;
 
-  static createInstance(dto: DeviceInputDto): Device {
-    const device = new this();
-    device.userId = dto.userId;
-    device.deviceId = dto.deviceId;
-    device.iat = Math.floor(Date.now() / 1000);
-    device.exp = Math.floor(Date.now() / 1000) + 20;
-    device.deviceName = dto.deviceName || 'not specified';
-    device.ip = dto.ip || 'not specified';
-    return device;
-  }
+  @Column()
+  ip: string;
+
+  @Column()
+  title: string;
+
+  @Column({ name: 'deviceName' })
+  deviceName: string;
+
+  @Column()
+  iat: number;
+
+  @Column()
+  exp: number;
+
+  @Column({ name: 'lastActiveDate', type: 'timestamp with time zone' })
+  lastActiveDate: Date;
+
+  @Column({ name: 'createdAt' })
+  createdAt: string;
+
+  @Column({ name: 'deviceId' })
+  deviceId: string;
+
+  @ManyToOne(() => User, (user) => user.devices, { onDelete: 'CASCADE' })
+  user: User;
+
+  @Column({ name: 'userId' })
+  userId: string;
 }

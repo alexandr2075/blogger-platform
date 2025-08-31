@@ -17,9 +17,9 @@ import { BasicAuthGuard } from '../../../../modules/users/guards/basic/basic-aut
 import { GetPostsQueryParams } from '../../posts/api/get-posts-query-params.input-dto';
 import { PostViewDto } from '../../posts/api/view-dto/posts.view-dto';
 import { PostsService } from '../../posts/application/posts.service';
-import { PostsQueryRepositoryPostgres } from '../../posts/infrastructure/posts.query-repository-postgres';
+import { PostsQueryRepository } from '../../posts/infrastructure/posts.query-repository';
 import { BlogsService } from '../application/blogs.service';
-import { BlogsQueryRepositoryPostgres } from '../infrastructure/blogs.query-repository-postgres';
+import { BlogsQueryRepository } from '../infrastructure/blogs.query-repository';
 import { GetBlogsQueryParams } from './get-blogs-query-params.input-dto';
 import {
   BlogPostInputDto,
@@ -35,9 +35,9 @@ import { CurrentUser } from '../../../../core/decorators/current-user.decorator'
 export class BlogsController {
   constructor(
     private blogsService: BlogsService,
-    private blogsQueryRepository: BlogsQueryRepositoryPostgres,
+    private blogsQueryRepository: BlogsQueryRepository,
     private postsService: PostsService,
-    private postsQueryRepository: PostsQueryRepositoryPostgres,
+    private postsQueryRepository: PostsQueryRepository,
   ) {}
 
   @Get(':id')

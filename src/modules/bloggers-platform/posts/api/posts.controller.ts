@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../core/decorators/current-user.decorator';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { PostsService } from '../application/posts.service';
-import { PostsQueryRepositoryPostgres } from '../infrastructure/posts.query-repository-postgres';
+import { PostsQueryRepository } from '../infrastructure/posts.query-repository';
 import { GetPostsQueryParams } from './get-posts-query-params.input-dto';
 import { CreatePostInputDto } from './input-dto/posts.input-dto';
 import { UpdatePostInputDto } from './input-dto/update-post.input-dto';
@@ -33,7 +33,7 @@ import { CommentViewDto } from '../../../bloggers-platform/comments/dto/comments
 export class PostsController {
   constructor(
     private postsService: PostsService,
-    private postsQueryRepository: PostsQueryRepositoryPostgres,
+    private postsQueryRepository: PostsQueryRepository,
   ) {}
   @UseGuards(JwtAuthGuardForUserId)
   @Get()

@@ -28,12 +28,16 @@ export class DevicesController {
   async devices(@Req() request: Request) {
     const refreshTokenCookie = request.headers.cookie;
     if (!refreshTokenCookie) {
-      throw new UnauthorizedException('Refresh token not found');
+      throw new UnauthorizedException({
+        errorsMessages: [{ message: 'Refresh token not found', field: 'refreshToken' }]
+      });
     }
 
     const refreshToken = refreshTokenCookie.split(';')[0].split('=')[1];
     if (!refreshToken) {
-      throw new UnauthorizedException('Invalid refresh token format');
+      throw new UnauthorizedException({
+        errorsMessages: [{ message: 'Invalid refresh token format', field: 'refreshToken' }]
+      });
     }
 
     const payload: RefreshPayload = await this.jwtService.verifyAsync(
@@ -54,7 +58,9 @@ export class DevicesController {
   async deleteDevice(@Req() request: Request) {
     const refreshTokenCookie = request.headers.cookie;
     if (!refreshTokenCookie) {
-      throw new UnauthorizedException('Refresh token not found');
+      throw new UnauthorizedException({
+        errorsMessages: [{ message: 'Refresh token not found', field: 'refreshToken' }]
+      });
     }
     await this.devicesService.deleteDevices(refreshTokenCookie);
   }
@@ -67,7 +73,9 @@ export class DevicesController {
   ) {
     const refreshTokenCookie = request.headers.cookie;
     if (!refreshTokenCookie) {
-      throw new UnauthorizedException('Refresh token not found');
+      throw new UnauthorizedException({
+        errorsMessages: [{ message: 'Refresh token not found', field: 'refreshToken' }]
+      });
     }
     if (!deviceId) {
       throw new BadRequestException('Device id not found');

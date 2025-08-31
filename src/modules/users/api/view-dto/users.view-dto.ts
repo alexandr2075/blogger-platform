@@ -1,7 +1,7 @@
 import type { User } from '../../domain/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform } from 'class-transformer';
-import { IsDate, IsEmail, IsString } from 'class-validator';
+import { IsDate, IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class UserViewDto {
   @ApiProperty({
@@ -31,21 +31,15 @@ export class UserViewDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({
-    description: 'Дата создания пользователя',
-    example: '2024-01-15T12:34:56.789Z',
-  })
-  @Expose()
-  @IsDate()
-  @Transform(({ value }) => (value instanceof Date ? value : new Date(value)))
-  createdAt: Date;
+@IsOptional()
+  createdAt: string;
 
   static mapToView(user: User): UserViewDto {
     const dto = new UserViewDto();
     dto.id = user.id;
     dto.login = user.login;
     dto.email = user.email;
-    dto.createdAt = user.createdAt;
+    dto.createdAt = user.createdAt!;
     return dto;
   }
 }
