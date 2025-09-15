@@ -16,6 +16,7 @@ import { CoreConfig } from '@core/core.config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DevicesModule } from '@modules/devices/devices.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { GameQuizModule } from './modules/game-quiz/game-quiz.module';
 import databaseConf, { type DatabaseConfig }  from './core/config/db.config';
 
 @Module({
@@ -46,6 +47,7 @@ import databaseConf, { type DatabaseConfig }  from './core/config/db.config';
     EmailModule,
     CoreModule,
     DevicesModule,
+    GameQuizModule,
   ],
   controllers: [AppController],
   providers: [

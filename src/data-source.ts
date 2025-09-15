@@ -7,6 +7,10 @@ import { Blog } from './modules/bloggers-platform/blogs/domain/blog.entity';
 import { Post } from './modules/bloggers-platform/posts/domain/post.entity';
 import { Like } from './modules/bloggers-platform/posts/domain/like.entity';
 import { Comment } from './modules/bloggers-platform/comments/domain/comment.entity';
+import { Player } from './modules/game-quiz/domain/player.entity';
+import { Answers } from './modules/game-quiz/domain/answers.entity';
+import { Game } from './modules/game-quiz/domain/game.entity';
+import { Questions } from './modules/game-quiz/domain/questions.entity';
 
 const env = process.env.NODE_ENV || 'development';
 dotenv.config({ path: `.env.${env}` });
@@ -18,7 +22,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.POSTGRES_USER || 'postgres',
   password: process.env.POSTGRES_PASSWORD || '12345',
   database: process.env.POSTGRES_DB || 'blogger-platform',
-  entities: [User, Device, Blog, Post, Like, Comment],
+  entities: [User, Device, Blog, Post, Like, Comment, Player, Answers, Game, Questions],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
   logging: true,

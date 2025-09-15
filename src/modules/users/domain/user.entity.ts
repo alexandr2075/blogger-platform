@@ -12,6 +12,7 @@ import { Post } from '@modules/bloggers-platform/posts/domain/post.entity';
 import { Like } from '@modules/bloggers-platform/posts/domain/like.entity';
 import { Comment } from '@modules/bloggers-platform/comments/domain/comment.entity';
 import { ConfirmedStatus } from './email.confirmation.interface';
+import { Player } from '@/modules/game-quiz/domain/player.entity';
 
 @Entity('users')
 export class User {
@@ -41,6 +42,7 @@ export class User {
 
   @OneToMany(() => Post, (post) => post.user)
   posts: Post[];
+
 
   @OneToMany(() => Like, (like) => like.user)
   likes: Like[];
