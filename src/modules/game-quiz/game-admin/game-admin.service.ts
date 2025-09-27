@@ -15,12 +15,13 @@ export class GameAdminService {
     ) {}
 
     async createQuestion(createQuestionDto: CreateQuestionRequestDto): Promise<QuestionResponseDto> {
+        const createdAt = new Date();
         const questionData: Partial<Questions> = {
             body: createQuestionDto.body,
             correctAnswers: createQuestionDto.correctAnswers,
             published: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: createdAt,
+            updatedAt: createdAt, // Set to same as createdAt for new questions
         };
 
         const savedQuestion = await this.gameAdminRepository.createQuestion(questionData);
@@ -31,7 +32,7 @@ export class GameAdminService {
             correctAnswers: savedQuestion.correctAnswers,
             published: savedQuestion.published,
             createdAt: savedQuestion.createdAt.toISOString(),
-            updatedAt: savedQuestion.updatedAt.toISOString(),
+            updatedAt: savedQuestion.updatedAt.getTime() === savedQuestion.createdAt.getTime() ? null : savedQuestion.updatedAt.toISOString(),
         };
     }
 
@@ -52,9 +53,17 @@ export class GameAdminService {
     }
 
     async updateQuestion(id: string, updateQuestionDto: UpdateQuestionRequestDto): Promise<void> {
-        const existingQuestion = await this.gameAdminRepository.findQuestionById(id);
-        if (!existingQuestion) {
-            throw new NotFoundException('Question not found');
+        try {
+            const existingQuestion = await this.gameAdminRepository.findQuestionById(id);
+            if (!existingQuestion) {
+                throw new NotFoundException('Question not found');
+            }
+        } catch (error) {
+            // Handle PostgreSQL UUID validation error
+            if (error.code === '22P02') {
+                throw new NotFoundException('Question not found');
+            }
+            throw error;
         }
 
         // Validate business rules
@@ -87,9 +96,18 @@ export class GameAdminService {
     }
 
     async publishQuestion(id: string, publishQuestionDto: PublishQuestionRequestDto): Promise<void> {
-        const existingQuestion = await this.gameAdminRepository.findQuestionById(id);
-        if (!existingQuestion) {
-            throw new NotFoundException('Question not found');
+        let existingQuestion;
+        try {
+            existingQuestion = await this.gameAdminRepository.findQuestionById(id);
+            if (!existingQuestion) {
+                throw new NotFoundException('Question not found');
+            }
+        } catch (error) {
+            // Handle PostgreSQL UUID validation error
+            if (error.code === '22P02') {
+                throw new NotFoundException('Question not found');
+            }
+            throw error;
         }
 
         // Validate business rules - when publishing, question must have correct answers
@@ -116,14 +134,22 @@ export class GameAdminService {
     }
 
     async deleteQuestion(id: string): Promise<void> {
-        const question = await this.gameAdminRepository.findQuestionById(id);
-        if (!question) {
-            throw new NotFoundException('Question not found');
-        }
+        try {
+            const question = await this.gameAdminRepository.findQuestionById(id);
+            if (!question) {
+                throw new NotFoundException('Question not found');
+            }
 
-        const deleted = await this.gameAdminRepository.deleteQuestion(id);
-        if (!deleted) {
-            throw new NotFoundException('Question not found');
+            const deleted = await this.gameAdminRepository.deleteQuestion(id);
+            if (!deleted) {
+                throw new NotFoundException('Question not found');
+            }
+        } catch (error) {
+            // Handle PostgreSQL UUID validation error
+            if (error.code === '22P02') {
+                throw new NotFoundException('Question not found');
+            }
+            throw error;
         }
     }
 
@@ -134,7 +160,7 @@ export class GameAdminService {
             correctAnswers: question.correctAnswers,
             published: question.published,
             createdAt: question.createdAt.toISOString(),
-            updatedAt: question.updatedAt.toISOString(),
+            updatedAt: question.updatedAt.getTime() === question.createdAt.getTime() ? null : question.updatedAt.toISOString(),
         };
     }
 }

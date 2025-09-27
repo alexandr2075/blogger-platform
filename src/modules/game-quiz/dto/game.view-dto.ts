@@ -16,6 +16,7 @@ export class PlayerProgressDto {
   answers: AnswerDto[];
   player: PlayerDto;
   score: number;
+  status?: 'Win' | 'Lose' | 'Draw';
 }
 
 export class QuestionDto {
@@ -27,7 +28,7 @@ export class GameViewDto {
   id: string;
   firstPlayerProgress: PlayerProgressDto;
   secondPlayerProgress: PlayerProgressDto | null;
-  questions: QuestionDto[];
+  questions: QuestionDto[] | null;
   status: GameStatus;
   pairCreatedDate: string;
   startGameDate: string | null;

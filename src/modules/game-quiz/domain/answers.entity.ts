@@ -1,4 +1,4 @@
-import { Entity, ManyToOne, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, ManyToOne, PrimaryGeneratedColumn, Column, JoinColumn } from "typeorm";
 import { Player } from "./player.entity";
 
 enum Status {
@@ -12,6 +12,7 @@ export class Answers {
     id: string;
 
     @ManyToOne(() => Player, (player) => player.answers)
+    @JoinColumn({ name: 'player_id' })
     player: Player;
 
     @Column({ type: 'uuid' })

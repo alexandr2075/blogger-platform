@@ -1,7 +1,7 @@
-import { Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Column, JoinColumn } from "typeorm";
-import { Answers } from "./answers.entity";
 import { User } from "@/modules/users/domain/user.entity";
-import { PlayerProgressDto, AnswerDto, PlayerDto } from "../dto/game.view-dto";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { AnswerDto, PlayerDto, PlayerProgressDto } from "../dto/game.view-dto";
+import { Answers } from "./answers.entity";
 
 enum Status {
     WIN = 'Win',
@@ -31,17 +31,19 @@ export class Player {
     status: Status.WIN | Status.LOSE | Status.DRAW;
 
     mapToViewDto(): PlayerProgressDto {
-        return {
+        const dto: PlayerProgressDto = {
             player: {
                 id: this.user?.id || this.userId,
                 login: this.user?.login || 'Unknown'
             } as PlayerDto,
             score: this.score,
-            answers: this.answers?.map(answer => ({
+            answers: this.answers?.sort((a, b) => a.date.getTime() - b.date.getTime()).map(answer => ({
                 questionId: answer.question_id,
                 answerStatus: answer.status as 'Correct' | 'Incorrect',
                 addedAt: answer.date.toISOString()
-            } as AnswerDto)) || []
+            } as AnswerDto)) || [],
         };
+
+        return dto;
     }
 }

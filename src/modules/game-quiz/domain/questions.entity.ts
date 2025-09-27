@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
-import { Game } from "./game.entity";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { QuestionDto } from "../dto/game.view-dto";
+import { Game } from "./game.entity";
 
 @Entity('questions')
 export class Questions {
@@ -19,8 +19,11 @@ export class Questions {
     @Column({ type: 'timestamp' })
     createdAt: Date;
 
-    @Column({ type: 'timestamp' })
+    @Column({ type: 'timestamp', nullable: true, default: null })
     updatedAt: Date;
+
+    @Column({ name: 'gameId', nullable: true })
+    gameId: string;
 
     @ManyToOne(() => Game, (game) => game.questions)
     game: Game;

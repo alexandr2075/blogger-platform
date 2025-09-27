@@ -1,18 +1,16 @@
 import {
   Column,
+  DeleteDateColumn,
   Entity,
   OneToMany,
-  OneToOne,
-  PrimaryGeneratedColumn,
-  DeleteDateColumn,
+  PrimaryGeneratedColumn
 } from 'typeorm';
-import { Device } from '@modules/devices/domain/device.entity';
+// import { Device } from '@modules/devices/domain/device.entity';
 import { Blog } from '@modules/bloggers-platform/blogs/domain/blog.entity';
-import { Post } from '@modules/bloggers-platform/posts/domain/post.entity';
-import { Like } from '@modules/bloggers-platform/posts/domain/like.entity';
 import { Comment } from '@modules/bloggers-platform/comments/domain/comment.entity';
+import { Like } from '@modules/bloggers-platform/posts/domain/like.entity';
+import { Post } from '@modules/bloggers-platform/posts/domain/post.entity';
 import { ConfirmedStatus } from './email.confirmation.interface';
-import { Player } from '@/modules/game-quiz/domain/player.entity';
 
 @Entity('users')
 export class User {
@@ -34,8 +32,8 @@ export class User {
   @Column({ name: 'isConfirmed', type: 'enum', enum: ConfirmedStatus, nullable: true })
   isConfirmed?: ConfirmedStatus;
   
-  @OneToMany(() => Device, (device) => device.user)
-  devices: Device[];
+  // @OneToMany(() => Device, (device) => device.user)
+  // devices: Device[];
 
   @OneToMany(() => Blog, (blog) => blog.user)
   blogs: Blog[];

@@ -14,5 +14,7 @@ export default (): DatabaseConfig => ({
     database: process.env.POSTGRES_DB,
     autoLoadEntities: true,
     synchronize: false,
+    migrations: process.env.NODE_ENV === 'testing' ? [] : ['dist/migrations/*.js'],
+    migrationsRun: false,
   } as TypeOrmModuleOptions,
 });

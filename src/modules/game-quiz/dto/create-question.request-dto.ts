@@ -1,8 +1,9 @@
-import { IsString, IsArray, ArrayMinSize, MinLength } from 'class-validator';
+import { IsString, IsArray, ArrayMinSize, MinLength, MaxLength } from 'class-validator';
 
 export class CreateQuestionRequestDto {
     @IsString()
     @MinLength(10, { message: 'Body must be at least 10 characters long' })
+    @MaxLength(500, { message: 'Body must be at most 500 characters long' })
     body: string;
 
     @IsArray()

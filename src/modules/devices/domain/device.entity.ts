@@ -1,5 +1,5 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '@modules/users/domain/user.entity';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('devices')
 export class Device {
@@ -30,7 +30,7 @@ export class Device {
   @Column({ name: 'deviceId' })
   deviceId: string;
 
-  @ManyToOne(() => User, (user) => user.devices, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user, { onDelete: 'CASCADE' })
   user: User;
 
   @Column({ name: 'userId' })
